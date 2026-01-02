@@ -277,3 +277,51 @@ svg {
 .app.is-collapsed .side__footer {
   display: none;
 }
+/* ===== Sidebar menu item ===== */
+.side__content {
+  padding: 0 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.side-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.9);
+  background: transparent;
+}
+
+.side-item:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.side-item__icon {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  opacity: 0.9;
+}
+
+.side-item__icon svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+/* 상단 타이틀 홈 링크 */
+.top-home-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.top-home-link:hover {
+  text-decoration: underline;
+  cursor: pointer;
+}

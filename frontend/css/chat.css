@@ -1,0 +1,123 @@
+/* 채팅 영역(메인 공통 레이아웃 위에 얹는 전용 스타일) */
+
+.chat {
+  flex: 1;
+  overflow: auto;
+  padding: 24px;
+}
+
+.chat-wrap {
+  max-width: 980px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* 메시지 공통 */
+.msg {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+/* 아바타 */
+.msg__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  color: #fff;
+  flex: 0 0 32px;
+}
+.msg__avatar--q {
+  background: #1e2939;
+}
+.msg__avatar--a {
+  background: #00a63e;
+}
+
+/* 말풍선 */
+.msg__bubble {
+  flex: 1;
+  padding: 24px 16px;
+  border-radius: 12px;
+  background: transparent;
+}
+
+.msg__bubble--a {
+  background: #f9fafb;
+}
+
+.msg__title {
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.msg__text {
+  font-size: 16px;
+  line-height: 24px;
+  color: #0a0a0a;
+}
+
+/* 사이드바 메뉴(이 화면에만 필요) */
+.side__content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.side-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+  background: transparent;
+}
+
+.side-item.is-active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.side-item__icon {
+  width: 16px;
+  display: inline-flex;
+  justify-content: center;
+}
+
+/* 메뉴 토글 버튼(메인에서 만든 거 재사용 가능하지만, 없으면 여기서 정의) */
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: #0a0a0a;
+}
+.icon-btn:hover {
+  background: #f3f4f6;
+}
+.icon-btn svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+/* 사이드바 접힘 토글 */
+.app.is-collapsed .side {
+  width: 72px;
+  flex-basis: 72px;
+}
+.app.is-collapsed .side__footer,
+.app.is-collapsed .side-item__text {
+  display: none;
+}
