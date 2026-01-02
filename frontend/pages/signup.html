@@ -2,15 +2,14 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Patent Office • 로그인</title>
+    <title>AI Patent Office • 회원가입</title>
     <link rel="stylesheet" href="../css/main.css" />
     <link rel="stylesheet" href="../css/login.css" />
   </head>
 
   <body>
     <div class="login-container">
-      <!-- Logo -->
+      <!-- Header -->
       <div class="login-header">
         <a href="../index.html" class="logo-link">
           <div class="logo">
@@ -32,11 +31,16 @@
           </div>
           <h1>AI Patent Office</h1>
         </a>
-        <p>로그인하여 시작하세요</p>
+        <p>계정을 만들어 시작하세요</p>
       </div>
 
       <!-- Form -->
       <form class="login-form">
+        <label>
+          이름
+          <input type="text" class="input" placeholder="홍길동" />
+        </label>
+
         <label>
           이메일
           <input type="email" class="input" placeholder="example@email.com" />
@@ -47,24 +51,26 @@
           <input type="password" class="input" placeholder="••••••••" />
         </label>
 
+        <label>
+          비밀번호 확인
+          <input type="password" class="input" placeholder="••••••••" />
+        </label>
+
         <div class="login-options">
           <label class="remember">
             <input type="checkbox" />
-            로그인 상태 유지
+            이용약관 및 개인정보처리방침에 동의합니다
           </label>
-          <a href="#" class="link">비밀번호 찾기</a>
         </div>
 
-        <button type="submit" class="btn-primary">로그인</button>
+        <button type="submit" class="btn-primary">회원가입</button>
       </form>
 
       <!-- Footer -->
       <div class="login-footer">
-        <span>계정이 없으신가요?</span>
-        <a href="./signup.html" class="link">회원가입</a>
+        <span>이미 계정이 있으신가요?</span>
+        <a href="./login.html" class="link">로그인</a>
       </div>
     </div>
-
-    <script src="./login.js"></script>
   </body>
 </html>
