@@ -59,9 +59,11 @@ btnSend.addEventListener("click", () => {
   }, 400);
 });
 
-btnLogin?.addEventListener("click", () => {
-  alert("로그인 기능은 준비 중입니다.");
-});
+if (btnLogin) {
+  btnLogin.addEventListener("click", () => {
+    location.href = "./login.html";
+  });
+}
 
 // 사이드바 토글
 const app = document.getElementById("app");

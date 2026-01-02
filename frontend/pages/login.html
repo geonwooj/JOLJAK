@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Patent Office • 로그인</title>
+    <link rel="stylesheet" href="../css/main.css" />
+    <link rel="stylesheet" href="../css/login.css" />
+  </head>
+
+  <body>
+    <div class="login-container">
+      <!-- Logo -->
+      <div class="login-header">
+        <a href="../index.html" class="logo-link">
+          <div class="logo">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              class="logo-svg"
+              aria-hidden="true"
+            >
+              <path
+                d="M12 2l1.8 4.6L18 8l-4.2 1.4L12 14l-1.8-4.6L6 8l4.2-1.4L12 2Z"
+                fill="currentColor"
+              />
+              <path
+                d="M19 5l.8 2 .2.2 2 .8-2 .8-.2.2-.8 2-.8-2-.2-.2-2-.8 2-.8.2-.2.8-2Z"
+                fill="currentColor"
+              />
+            </svg>
+          </div>
+          <h1>AI Patent Office</h1>
+        </a>
+        <p>로그인하여 시작하세요</p>
+      </div>
+
+      <!-- Form -->
+      <form class="login-form">
+        <label>
+          이메일
+          <input type="email" class="input" placeholder="example@email.com" />
+        </label>
+
+        <label>
+          비밀번호
+          <input type="password" class="input" placeholder="••••••••" />
+        </label>
+
+        <div class="login-options">
+          <label class="remember">
+            <input type="checkbox" />
+            로그인 상태 유지
+          </label>
+          <a href="#" class="link">비밀번호 찾기</a>
+        </div>
+
+        <button type="submit" class="btn-primary">로그인</button>
+      </form>
+
+      <!-- Divider -->
+      <div class="divider">
+        <span>또는</span>
+      </div>
+
+      <!-- Social -->
+      <div class="social-login">
+        <button class="btn-social">Google</button>
+        <button class="btn-social">GitHub</button>
+      </div>
+
+      <!-- Footer -->
+      <div class="login-footer">
+        <span>계정이 없으신가요?</span>
+        <a href="#" class="link">회원가입</a>
+      </div>
+    </div>
+
+    <script src="./login.js"></script>
+  </body>
+</html>

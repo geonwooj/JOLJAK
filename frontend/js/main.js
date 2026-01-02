@@ -29,10 +29,11 @@ btnSend.addEventListener("click", () => {
   updateSendState();
 });
 
-btnLogin.addEventListener("click", () => {
-  // TODO: 로그인 페이지 이동/모달 등으로 교체
-  alert("로그인 기능은 준비 중입니다.");
-});
+if (btnLogin) {
+  btnLogin.addEventListener("click", () => {
+    location.href = "./pages/login.html";
+  });
+}
 
 updateSendState();
 // 사이드바 토글
