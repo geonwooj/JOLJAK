@@ -2,7 +2,8 @@
 
 .chat {
   flex: 1;
-  overflow: auto;
+  overflow-y: auto; /* ✅ 채팅만 스크롤 */
+  overflow-x: hidden;
   padding: 24px;
 }
 
@@ -120,4 +121,38 @@
 .app.is-collapsed .side__footer,
 .app.is-collapsed .side-item__text {
   display: none;
+}
+/* ✅ 채팅 화면: 전체 스크롤 막고, chat만 스크롤 되게 강제 */
+html,
+body {
+  height: 100%;
+}
+
+body {
+  overflow: hidden; /* ✅ 전체(바디) 스크롤 차단 */
+}
+
+.app {
+  height: 100vh; /* ✅ 화면 높이 고정 */
+  overflow: hidden; /* ✅ 앱 바깥 스크롤 방지 */
+}
+
+.main {
+  height: 100%; /* ✅ 헤더/채팅/푸터를 한 화면에 */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* ✅ main 자체 스크롤 방지 */
+}
+
+.top,
+.bottom {
+  flex: 0 0 auto; /* ✅ 헤더/푸터 고정 */
+}
+
+.chat {
+  flex: 1 1 auto; /* ✅ 남는 영역 전부 차지 */
+  min-height: 0; /* ✅ 중요! flex 자식이 스크롤 되게 해줌 */
+  overflow-y: auto; /* ✅ 채팅만 스크롤 */
+  overflow-x: hidden;
+  padding: 24px;
 }

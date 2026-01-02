@@ -28,8 +28,8 @@ body {
   display: flex;
 }
 .side {
-  width: 256px;
-  flex: 0 0 256px;
+  width: 280px;
+  flex: 0 0 280px;
   background: #000;
   position: relative;
   border-right: 1px solid rgba(255, 255, 255, 0.1);
@@ -308,6 +308,14 @@ svg {
   justify-content: center;
   color: #ffffff;
   opacity: 0.9;
+  flex-shrink: 0;
+}
+
+.side-item__text {
+  white-space: nowrap; /* 줄바꿈 X */
+  overflow: visible; /* ✅ 숨김 해제 */
+  text-overflow: unset; /* ✅ ... 제거 */
+  flex: 0 0 auto; /* ✅ 글자 크기만큼 */
 }
 
 .side-item__icon svg {
