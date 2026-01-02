@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Patent Office</title>
+    <link rel="stylesheet" href="./css/main.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="side">
+        <div class="side__spacer"></div>
+        <div class="side__content"></div>
+        <div class="side__footer">데모 버전</div>
+      </aside>
+
+      <main class="main">
+        <header class="top">
+          <div class="top__left">
+            <button
+              class="icon-btn"
+              id="btnMenu"
+              type="button"
+              aria-label="메뉴 열기/닫기"
+            >
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M3 6h18"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="M3 12h18"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="M3 18h18"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </button>
+            <h1>AI Patent Office</h1>
+          </div>
+
+          <button class="btn" id="btnLogin" type="button">
+            <!-- user -->
+            <svg viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"
+                stroke="currentColor"
+                stroke-width="1.8"
+              />
+              <path
+                d="M4 20a8 8 0 0 1 16 0"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+              />
+            </svg>
+            로그인 하세요
+          </button>
+        </header>
+
+        <section class="content">
+          <div class="hero">
+            <div class="hero__icon badge" aria-hidden="true">
+              <!-- search -->
+              <svg viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M10.5 18a7.5 7.5 0 1 1 7.5-7.5A7.5 7.5 0 0 1 10.5 18Z"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                />
+                <path
+                  d="M16.5 16.5 21 21"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </div>
+
+            <h2>AI Patent Office에 오신 것을 환영합니다</h2>
+            <p>
+              특허 검색, 선행기술 조사, 특허성 분석 등 다양한 특허 관련 업무를
+              AI로 도와드립니다
+            </p>
+
+            <div class="grid">
+              <article class="card">
+                <span class="chip" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M10.5 18a7.5 7.5 0 1 1 7.5-7.5A7.5 7.5 0 0 1 10.5 18Z"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    />
+                    <path
+                      d="M16.5 16.5 21 21"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </span>
+                <div>
+                  <h3>특허 검색</h3>
+                  <p>특정 기술 분야의 특허를 검색하고 분석해보세요</p>
+                </div>
+              </article>
+
+              <article class="card">
+                <span class="chip" aria-hidden="true">
+                  <!-- compass -->
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M12 21a9 9 0 1 0-9-9 9 9 0 0 0 9 9Z"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    />
+                    <path
+                      d="M14.8 9.2 13 13l-3.8 1.8L11 11l3.8-1.8Z"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </span>
+                <div>
+                  <h3>선행기술 조사</h3>
+                  <p>아이디어와 관련된 선행기술을 찾아보세요</p>
+                </div>
+              </article>
+
+              <article class="card">
+                <span class="chip" aria-hidden="true">
+                  <!-- chart -->
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M4 19V5"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                    />
+                    <path
+                      d="M8 19v-7"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                    />
+                    <path
+                      d="M12 19v-11"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                    />
+                    <path
+                      d="M16 19v-5"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                    />
+                    <path
+                      d="M20 19v-9"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </span>
+                <div>
+                  <h3>특허성 분석</h3>
+                  <p>발명의 특허 가능성을 평가해보세요</p>
+                </div>
+              </article>
+
+              <article class="card">
+                <span class="chip" aria-hidden="true">
+                  <!-- doc -->
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M7 3h7l3 3v15a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M14 3v4h4"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M8 12h8"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                    />
+                    <path
+                      d="M8 16h8"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </span>
+                <div>
+                  <h3>특허 문서 작성</h3>
+                  <p>특허 명세서 작성을 도움받으세요</p>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <footer class="bottom">
+          <div class="composer">
+            <button class="circle" type="button" aria-label="추가">
+              <!-- plus -->
+              <svg viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M12 5v14"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="M5 12h14"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </button>
+
+            <input
+              id="messageInput"
+              type="text"
+              placeholder="메시지를 입력하세요..."
+            />
+
+            <button
+              class="circle send"
+              id="btnSend"
+              type="button"
+              aria-label="전송"
+              disabled
+            >
+              <!-- send -->
+              <svg viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M22 2 11 13"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="M22 2 15 22l-4-9-9-4 20-7Z"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <small
+            >AI Patent Office는 실수를 할 수 있습니다. 중요한 정보는
+            확인하세요.</small
+          >
+        </footer>
+      </main>
+    </div>
+
+    <script src="./js/main.js"></script>
+  </body>
+</html>

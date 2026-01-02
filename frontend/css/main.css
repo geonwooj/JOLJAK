@@ -1,0 +1,279 @@
+:root {
+  --b: #e5e7eb;
+  --b2: #d1d5dc;
+  --t: #101828;
+  --m: #6a7282;
+  --p: #2b7fff;
+  --q: #9810fa;
+  --chip: #eff6ff;
+  --shadow: 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  font-family: Arial, system-ui, sans-serif;
+  color: var(--t);
+  background: #fff;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+}
+.side {
+  width: 256px;
+  flex: 0 0 256px;
+  background: #000;
+  position: relative;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+.side__spacer {
+  height: 24px;
+}
+.side__content {
+  position: absolute;
+  left: 8px;
+  top: 24px;
+  right: 8px;
+  bottom: 56.8px;
+  overflow: hidden;
+}
+.side__footer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 16px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+}
+
+.main {
+  flex: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+.top {
+  height: 56.8px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--b);
+}
+.top__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.top h1 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 400;
+  color: #0a0a0a;
+}
+
+.btn {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.btn:hover {
+  background: #f9fafb;
+}
+
+.content {
+  flex: 1;
+  overflow: auto;
+  padding: 32px 24px 0;
+}
+.hero {
+  max-width: 980px;
+  margin: 0 auto;
+  text-align: center;
+}
+.hero h2 {
+  margin: 24px 0 0;
+  font-size: 16px;
+  font-weight: 400;
+}
+.hero p {
+  margin: 12px auto 0;
+  max-width: 560px;
+  color: var(--m);
+  line-height: 24px;
+}
+
+.badge {
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  margin: 0 auto;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--p), var(--q));
+  color: #fff;
+}
+.badge--plain {
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  color: #0a0a0a;
+  margin: 0;
+}
+
+.grid {
+  margin-top: 48px;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  text-align: left;
+}
+@media (max-width: 980px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+.card {
+  border: 1px solid var(--b);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  gap: 12px;
+  background: #fff;
+  min-height: 86px;
+}
+.card h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 400;
+}
+.card p {
+  margin: 4px 0 0;
+  color: var(--m);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.chip {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--chip);
+  display: grid;
+  place-items: center;
+  color: #155dfc;
+  flex: 0 0 32px;
+}
+
+.bottom {
+  border-top: 1px solid var(--b);
+  padding: 16px 24px;
+  background: #fff;
+}
+.composer {
+  max-width: 980px;
+  margin: 0 auto;
+  height: 58px;
+  padding: 0 16px 12px;
+  border-radius: 24px;
+  border: 1px solid var(--b2);
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+.composer input {
+  flex: 1;
+  height: 36px;
+  border: 0;
+  outline: 0;
+  border-radius: 10px;
+  background: #f3f3f5;
+  padding: 0 12px;
+  font-size: 14px;
+}
+.circle {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: #0a0a0a;
+}
+.send {
+  background: #e5e7eb;
+  color: #fff;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.send:enabled {
+  background: #111827;
+  opacity: 1;
+  cursor: pointer;
+}
+.bottom small {
+  display: block;
+  margin-top: 8px;
+  text-align: center;
+  color: var(--m);
+  font-size: 12px;
+}
+
+svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+.badge svg {
+  width: 32px;
+  height: 32px;
+}
+/* 햄버거 버튼 */
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: #0a0a0a;
+}
+.icon-btn:hover {
+  background: #f3f4f6;
+}
+.icon-btn svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+/* 사이드바 접힘 토글 */
+.app.is-collapsed .side {
+  width: 72px;
+  flex-basis: 72px;
+}
+.app.is-collapsed .side__content,
+.app.is-collapsed .side__footer {
+  display: none;
+}
