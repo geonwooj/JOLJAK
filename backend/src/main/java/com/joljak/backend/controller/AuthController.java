@@ -6,7 +6,11 @@ import com.joljak.backend.service.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@CrossOrigin(origins = "http://127.0.0.1:5500") // Live Server 주소
+@CrossOrigin(origins = {
+    "http://127.0.0.1:5500",
+    "http://localhost:5500"
+})
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {

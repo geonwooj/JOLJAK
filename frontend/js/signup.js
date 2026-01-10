@@ -14,7 +14,7 @@ document.querySelector(".signup-form").addEventListener("submit", async (e) => {
   }
 
   try {
-    const response = await fetch("http://localhost:8080/api/auth/signup", {
+    const response = await fetch("http://127.0.0.1:8080/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, password })
