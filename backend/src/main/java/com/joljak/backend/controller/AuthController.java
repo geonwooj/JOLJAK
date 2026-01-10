@@ -6,8 +6,10 @@ import com.joljak.backend.service.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@CrossOrigin(origins = "*")
-
+@CrossOrigin(origins = {
+    "http://127.0.0.1:5500",
+    "http://localhost:5500"
+})
 
 @RestController
 @RequestMapping("/api/auth")
