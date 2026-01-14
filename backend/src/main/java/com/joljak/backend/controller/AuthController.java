@@ -8,8 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @CrossOrigin(origins = {
-    "http://127.0.0.1:5500",
-    "http://localhost:5500"
+        "http://127.0.0.1:5500",
+        "http://localhost:5500"
 })
 @RestController
 @RequestMapping("/api/auth")
@@ -31,8 +31,13 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        var user = authService.login(request);
-        String token = jwtUtil.generateToken(user.getEmail());
-        return ResponseEntity.ok(token);
+        try {
+            var user = authService.login(request);
+            String token = jwtUtil.generateToken(user.getEmail());
+            return ResponseEntity.ok(token);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(401).body(e.getMessage());
+        }
     }
+
 }
