@@ -29,13 +29,31 @@ btnSend.addEventListener("click", () => {
   updateSendState();
 });
 
+/* =========================
+ * ⭐ 로그인 상태에 따라 버튼 변경
+ * ========================= */
 if (btnLogin) {
-  btnLogin.addEventListener("click", () => {
-    location.href = "./pages/login.html";
-  });
+  const user = JSON.parse(localStorage.getItem("loginUser"));
+
+  if (user && user.name) {
+    // 🔐 로그인 상태
+    btnLogin.lastChild.textContent = ` ${user.name}`;
+
+    btnLogin.addEventListener("click", () => {
+      location.href = "./pages/profile.html";
+    });
+  } else {
+    // 🔓 비로그인 상태
+    btnLogin.lastChild.textContent = " 로그인 하세요";
+
+    btnLogin.addEventListener("click", () => {
+      location.href = "./pages/login.html";
+    });
+  }
 }
 
 updateSendState();
+
 // 사이드바 토글
 const app = document.querySelector(".app");
 const btnMenu = document.getElementById("btnMenu");

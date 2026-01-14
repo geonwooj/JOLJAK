@@ -1,0 +1,55 @@
+/* 모달 전체 배경 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: none; /* 기본 숨김 */
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+/* 모달 박스 */
+.modal-content {
+  background: #fff;
+  padding: 24px;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 350px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.modal-message {
+  font-size: 16px;
+  margin-bottom: 24px;
+  line-height: 1.5;
+  color: #333;
+}
+
+/* 버튼 그룹 */
+.modal-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.modal-btn {
+  flex: 1;
+  height: 44px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.modal-btn-confirm {
+  background: #030213;
+  color: #fff;
+} /* 기존 btn-primary 색상 */
+.modal-btn-cancel {
+  background: #f3f3f5;
+  color: #6a7282;
+}
