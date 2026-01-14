@@ -1,7 +1,7 @@
 import os
-from pipeline.pipeline import process_pdf
+from pipeline import process_pdf
 
-RAW_DIR = "data/raw_pdf"
+RAW_DIR = "../data/raw_pdf"
 
 if __name__ == "__main__":
     os.makedirs(RAW_DIR, exist_ok=True)
