@@ -5,11 +5,6 @@ document.querySelector(".login-form").addEventListener("submit", async (e) => {
   const email = inputs[0].value.trim();
   const password = inputs[1].value.trim();
 
-  if (!email || !password) {
-    alert("이메일과 비밀번호를 입력해주세요.");
-    return;
-  }
-
   try {
     const response = await fetch("http://127.0.0.1:8080/api/auth/login", {
       method: "POST",
@@ -18,19 +13,20 @@ document.querySelector(".login-form").addEventListener("submit", async (e) => {
     });
 
     if (!response.ok) {
-      const errMsg = await response.text();
-      alert("로그인 실패: " + errMsg);
+      alert(await response.text());
       return;
     }
 
-    const result = await response.text();
-    alert(result);
+    const token = await response.text();
 
-    // 로그인 성공 시 메인 페이지 이동
+    // 🔥 로그인 토큰 저장
+    localStorage.setItem("token", token);
+
+    // 메인 페이지 이동
     window.location.href = "../index.html";
 
   } catch (err) {
-    alert("로그인 요청 실패. 서버 확인 필요.");
+    alert("로그인 요청 실패");
     console.error(err);
   }
 });
