@@ -26,7 +26,10 @@ document.querySelector(".login-form").addEventListener("submit", async (e) => {
     const result = await response.text();
     await CustomModal.alert(result);
 
-    // 로그인 성공 시 메인 페이지 이동
+    // 🔥 로그인 토큰 저장
+    localStorage.setItem("token", token);
+
+    // 메인 페이지 이동
     window.location.href = "../index.html";
   } catch (err) {
     await CustomModal.alert("로그인 요청 실패. 서버 확인 필요.");

@@ -4,7 +4,7 @@ import fitz
 
 from .quality import is_low_quality_text
 from .ocr import ocr_page
-from .normalize import normalize_text, normalize_ocr_typos
+from .normalize import normalize_text
 from .section import extract_sections
 from .claims import split_claims
 from .detect import detect_tables, detect_equations
@@ -22,7 +22,6 @@ def process_pdf(pdf_path, output_dir="data/processed"):
         page_text = extract_text_from_page(page)
         full_text += normalize_text(page_text) + "\n\n"
 
-    full_text = normalize_ocr_typos(full_text)
     sections = extract_sections(full_text)
 
     sections["id"] = os.path.basename(pdf_path).removesuffix(".pdf")
