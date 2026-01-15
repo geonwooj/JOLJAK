@@ -1,17 +1,35 @@
-import os
 import json
 import fitz
+import os
 
 from .quality import is_low_quality_text
-from .ocr import ocr_page
 from .normalize import normalize_text
 from .section import extract_sections
 from .claims import split_claims
 from .detect import detect_tables, detect_equations
+from .ocr_engine import init_ocr_reader, ocr_pdf_page
+from paddleocr import PPStructure
+structure_engine = None
 
+def init_structure_engine():
+    global structure_engine
+    if structure_engine is None:
+        structure_engine = PPStructure(table=True, ocr=True, lang="korean")
+    return structure_engine
+
+def analyze_page_structure(page):
+    init_structure_engine()
+    pix = page.get_pixmap(dpi=200)
+    img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, 3)
+    result = structure_engine(img)
+    return result
+    
 def extract_text_from_page(page):
     text = page.get_text("text")
-    return ocr_page(page) if is_low_quality_text(text) else text
+    if is_low_quality_text(text):
+        init_ocr_reader()
+        return ocr_pdf_page(page)
+    return text
 
 
 def process_pdf(pdf_path, output_dir="data/processed"):
@@ -27,7 +45,6 @@ def process_pdf(pdf_path, output_dir="data/processed"):
     sections["id"] = os.path.basename(pdf_path).removesuffix(".pdf")
     sections["tables_raw"] = detect_tables(full_text)
     sections["equations_detected"] = detect_equations(full_text)
-
     if sections.get("claims"):
         sections["claims_structured"] = split_claims(sections["claims"])
 

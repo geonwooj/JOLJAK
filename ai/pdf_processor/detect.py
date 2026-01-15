@@ -1,4 +1,6 @@
 import re
+from rapid_latex_ocr import LaTeXOCR
+latex_ocr = LaTeXOCR()
 
 def detect_tables(text: str):
     return [
@@ -8,4 +10,9 @@ def detect_tables(text: str):
 
 
 def detect_equations(text: str):
-    return re.findall(r'수학식\s*\d+', text)
+    matches = re.finditer(r'수학식\s*\d+[\s\S]+?(?=\n\n|수학식\s*\d+|$)', text)
+    parsed = []
+    for m in matches:
+        eq_text = m.group(0)
+        parsed.append(eq_text)
+    return parsed

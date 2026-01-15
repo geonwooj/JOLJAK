@@ -1,39 +1,18 @@
-from pdf_processor.pipeline import process_pdf
+
+from ai.prompts.prompt import PromptBuilder
+
+builder = PromptBuilder(field="fitness", n_shots=2, temperature=0.25)
+
+system, user = builder.build(
+    user_idea="스마트폰으로 실시간 운동 자세 교정해주는 AI 웨어러블 시스템",
+    diff={"user_only": ["실시간 자세 피드백", "웨어러블 센서 연동"]},
+    prior_claims="청구항 1. 스마트짐 내의 운동기구 각각과 통신하는 통신부; ..."
+)
+
+print("SYSTEM:\n", system)
+print("\nUSER:\n", user)
+
 from ai.pipeline import GPTPipeline
-
-def run(pdf_path: str):
-    patent_json = process_pdf(pdf_path)
-
-    gpt = GPTPipeline()
-
-    summary = gpt.summarize_patent(
-        patent_json["description"]
-    )
-
-    claim_analysis = gpt.parse_claim(
-        patent_json["claims"]
-    )
-
-    user_idea = "본 발명은 테스트용 AI 시스템에 관한 것이다."
-    diff = gpt.diff_elements(
-        idea=user_idea,
-        prior=claim_analysis
-    )
-
-    final_claim = gpt.generate_claim(
-        elements=claim_analysis,
-        diff_elements=diff,
-        examples=[]
-    )
-
-    return {
-        "summary": summary,
-        "claim_analysis": claim_analysis,
-        "diff": diff,
-        "final_claim": final_claim
-    }
-
-
-if __name__ == "__main__":
-    result = run("data/raw_pdf/sample.pdf")
-    print(result["final_claim"])
+gpt = GPTPipeline()
+response = gpt.llm.call(system, user)
+print(response)
