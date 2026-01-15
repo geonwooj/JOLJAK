@@ -1,11 +1,11 @@
+
 SYSTEM = """
 너는 한국 특허 문헌을 분석하는 AI 요약 보조 도구이다.
 법률 해석이나 신규성 판단은 수행하지 않는다.
 청구항 분석과 기술 비교를 위한 정보만 요약한다.
 """
 
-
-def build_prompt(patent_text: str) -> str:
+def get_summarize_prompt(patent_text: str) -> str:
     return f"""
 [입력 문서]
 {patent_text}

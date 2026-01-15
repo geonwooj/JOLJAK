@@ -1,6 +1,8 @@
+# ai/pipeline.py
+
 import json
-from .llm_client import LLMClient
-from .prompts import summarize, claim_parse, diff, claim_gen, consensus
+from ai.llm_client import LLMClient
+from ai.prompts import summarize, claim_parse, diff, claim_gen, consensus
 
 class GPTPipeline:
     def __init__(self):
@@ -10,57 +12,69 @@ class GPTPipeline:
     # 요약
     # ----------------------------
     def summarize_patent(self, text):
-        raw = self.llm.call(
-            summarize.SYSTEM,
-            summarize.build_prompt(text)
-        )
+        system = summarize.SYSTEM
+        user = summarize.get_summarize_prompt(text)
+        raw = self.llm.call(system, user)
         return self._load_json(raw, "summarize")
 
     # ----------------------------
     # 청구항 파싱
     # ----------------------------
     def parse_claim(self, claim_text):
-        raw = self.llm.call(
-            claim_parse.SYSTEM,
-            claim_parse.build_prompt(claim_text)
-        )
+        system = claim_parse.SYSTEM
+        user = claim_parse.get_claim_parse_prompt(claim_text)
+        raw = self.llm.call(system, user)
         return self._load_json(raw, "claim_parse")
 
     # ----------------------------
     # 차이 분석 (diff)
     # ----------------------------
     def diff_elements(self, idea, prior):
-        raw = self.llm.call(
-            diff.SYSTEM,
-            diff.build_prompt(idea, prior)
-        )
+        system = diff.SYSTEM
+        user = diff.get_diff_prompt(idea, prior)
+        raw = self.llm.call(system, user)
         return self._load_json(raw, "diff")
 
     # ----------------------------
-    # 청구항 생성 + 합의
+    # 청구항 생성 + 합의 (핵심 수정)
     # ----------------------------
-    def generate_claim(self, elements: dict, diff_elements: dict, examples):
-        drafts = [
-            self.llm.call(
-                claim_gen.SYSTEM,
-                claim_gen.build_prompt(elements, diff_elements, examples)
-            )
-            for _ in range(5)
-        ]
-
-        final = self.llm.call(
-            consensus.SYSTEM,
-            consensus.build_prompt(drafts)
+    def generate_claim(
+        self,
+        elements: dict,
+        diff_elements: dict,
+        field: str = "fitness",
+        n_shots: int = 3,
+        temperature: float = 0.3
+    ):
+        system, user = claim_gen.get_claim_gen_prompt(
+            elements=elements,
+            diff_elements=diff_elements,
+            field=field,
+            n_shots=n_shots,
+            temperature=temperature
         )
-        return final
+
+        drafts = []
+        for _ in range(5):
+            raw = self.llm.call(system, user)
+            drafts.append(raw)
+
+        consensus_system = consensus.SYSTEM
+        consensus_user = consensus.get_consensus_prompt(drafts)
+        final_raw = self.llm.call(consensus_system, consensus_user)
+
+        return self._load_json(final_raw, "consensus")
 
     # ----------------------------
     # 공통 JSON 파서
     # ----------------------------
     def _load_json(self, raw: str, stage: str):
         try:
-            return json.loads(raw)
-        except json.JSONDecodeError:
+            start = raw.find('{')
+            end = raw.rfind('}') + 1
+            cleaned = raw[start:end]
+            return json.loads(cleaned)
+        except json.JSONDecodeError as e:
             raise ValueError(
-                f"[{stage}] GPT 출력이 JSON 형식이 아님\n\n{raw}"
+                f"[{stage}] GPT 출력이 JSON 형식이 아님\n\n원본:\n{raw}\n\n오류: {e}"
             )

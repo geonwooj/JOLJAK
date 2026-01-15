@@ -1,13 +1,11 @@
-# ai/prompts/prompt.py
+
 
 from typing import Dict
-import json
-
-from .summarize import get_summarize_prompt
-from .claim_parse import get_claim_parse_prompt
-from .diff import get_diff_prompt
-from .claim_gen import get_claim_gen_prompt
-from .consensus import get_consensus_prompt
+from prompts.summarize import get_summarize_prompt
+from prompts.claim_parse import get_claim_parse_prompt
+from prompts.diff import get_diff_prompt
+from prompts.claim_gen import get_claim_gen_prompt
+from prompts.consensus import get_consensus_prompt
 
 from utils.fewshot_loader import load_claim_generation_examples
 
@@ -76,3 +74,4 @@ def assemble_pipeline_prompts(
         "consensus": consensus_p,
         "full_chain_preview": full_chain
     }
+
