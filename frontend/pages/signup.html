@@ -1,79 +1,90 @@
 <!DOCTYPE html>
 <html lang="ko">
-  <head>
-    <meta charset="UTF-8" />
-    <title>AI Patent Office • 회원가입</title>
-    <link rel="stylesheet" href="../css/main.css" />
-    <link rel="stylesheet" href="../css/login.css" />
-    <link rel="stylesheet" href="../css/modal.css" />
-  </head>
 
-  <body>
-    <div class="login-container">
-      <!-- Header -->
-      <div class="login-header">
-        <a href="../index.html" class="logo-link">
-          <div class="logo">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              class="logo-svg"
-              aria-hidden="true"
-            >
-              <path
-                d="M12 2l1.8 4.6L18 8l-4.2 1.4L12 14l-1.8-4.6L6 8l4.2-1.4L12 2Z"
-                fill="currentColor"
-              />
-              <path
-                d="M19 5l.8 2 .2.2 2 .8-2 .8-.2.2-.8 2-.8-2-.2-.2-2-.8 2-.8.2-.2.8-2Z"
-                fill="currentColor"
-              />
-            </svg>
-          </div>
-          <h1>AI Patent Office</h1>
-        </a>
-        <p>계정을 만들어 시작하세요</p>
-      </div>
+<head>
+  <meta charset="UTF-8" />
+  <title>AI Patent Office • 회원가입</title>
+  <link rel="stylesheet" href="../css/main.css" />
+  <link rel="stylesheet" href="../css/login.css" />
+  <link rel="stylesheet" href="../css/modal.css" />
+</head>
 
-      <!-- Form -->
-      <form class="login-form">
-        <label>
-          이름
-          <input type="text" class="input" placeholder="홍길동" />
-        </label>
-
-        <label>
-          이메일
-          <input type="email" class="input" placeholder="example@email.com" />
-        </label>
-
-        <label>
-          비밀번호
-          <input type="password" class="input" placeholder="••••••••" />
-        </label>
-
-        <label>
-          비밀번호 확인
-          <input type="password" class="input" placeholder="••••••••" />
-        </label>
-
-        <div class="login-options">
-          <label class="remember">
-            <input type="checkbox" />
-            이용약관 및 개인정보처리방침에 동의합니다
-          </label>
+<body>
+  <div class="login-container">
+    <!-- Header -->
+    <div class="login-header">
+      <a href="../index.html" class="logo-link">
+        <div class="logo">
+          <svg viewBox="0 0 24 24" fill="none" class="logo-svg" aria-hidden="true">
+            <path d="M12 2l1.8 4.6L18 8l-4.2 1.4L12 14l-1.8-4.6L6 8l4.2-1.4L12 2Z" fill="currentColor" />
+            <path d="M19 5l.8 2 .2.2 2 .8-2 .8-.2.2-.8 2-.8-2-.2-.2-2-.8 2-.8.2-.2.8-2Z" fill="currentColor" />
+          </svg>
         </div>
-
-        <button type="submit" class="btn-primary">회원가입</button>
-      </form>
-
-      <!-- Footer -->
-      <div class="login-footer">
-        <span>이미 계정이 있으신가요?</span>
-        <a href="./login.html" class="link">로그인</a>
-      </div>
+        <h1>AI Patent Office</h1>
+      </a>
+      <p>계정을 만들어 시작하세요</p>
     </div>
-    <script src="../js/signup.js"></script>
-    <script src="../js/modal.js"></script>
-  </body>
+
+    <!-- Form -->
+    <form class="login-form">
+      <label>
+        이름
+        <input type="text" class="input" id="nameInput" placeholder="홍길동" />
+      </label>
+
+      <div class="row">
+        <span class="label">이메일</span>
+
+        <input type="email" class="input" id="emailInput" placeholder="example@email.com"
+          style="flex: 1; min-width: 180px;" />
+
+        <button type="button" class="btn-primary" id="sendCodeBtn" style="white-space:nowrap;">
+          이메일 인증
+        </button>
+      </div>
+
+      <div class="row" id="verifyBox" style="display:none;">
+        <span class="label">인증코드</span>
+
+        <input type="text" class="input" id="codeInput" placeholder="6자리 숫자" maxlength="6"
+          style="flex: 1; min-width: 180px;" />
+
+        <button type="button" class="btn-primary" id="verifyCodeBtn" style="white-space:nowrap;">
+          확인
+        </button>
+      </div>
+
+      <p id="verifyStatus" style="margin-top:6px; font-size:13px;"></p>
+
+
+      <label>
+        비밀번호
+        <input type="password" class="input" id="passwordInput" placeholder="••••••••" />
+      </label>
+
+      <label>
+        비밀번호 확인
+        <input type="password" class="input" id="passwordConfirmInput" placeholder="••••••••" />
+      </label>
+
+      <div class="login-options">
+        <label class="remember">
+          <input type="checkbox" />
+          이용약관 및 개인정보처리방침에 동의합니다
+        </label>
+      </div>
+
+      <button type="submit" class="btn-primary" id="signupBtn" disabled>회원가입</button>
+    </form>
+
+    <!-- Footer -->
+    <div class="login-footer">
+      <span>이미 계정이 있으신가요?</span>
+      <a href="./login.html" class="link">로그인</a>
+    </div>
+  </div>
+  <script src="../js/signup.js"></script>
+  <script src="../js/modal.js"></script>
+</body>
+
 </html>
