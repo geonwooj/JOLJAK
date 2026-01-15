@@ -1,67 +1,44 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const btnBack = document.getElementById("btnBack");
   const btnLogout = document.getElementById("btnLogout");
-  const editProfileBtn = document.querySelector(".profile-card .btn");
-  const emailChangeBtn = document.querySelectorAll(".link-btn")[0];
-  const passwordChangeBtn = document.querySelectorAll(".link-btn")[1];
   const deleteAccountBtn = document.querySelector(".btn-danger");
 
   // 뒤로 가기
-  btnBack.addEventListener("click", () => {
-    history.back(); // 이전 페이지로 이동
-  });
+  btnBack.addEventListener("click", () => history.back());
 
-  // 프로필 편집
-  editProfileBtn.addEventListener("click", () => {
-    // 예: profile_edit.html 페이지로 이동
-    window.location.href = "/frontend/profile_edit.html";
-  });
+  const token = localStorage.getItem("token");
 
-  // 이메일 변경
-  emailChangeBtn.addEventListener("click", () => {
-    window.location.href = "/frontend/email_change.html";
-  });
+  if (!token) {
+    alert("로그인이 필요합니다.");
+    window.location.href = "./login.html";
+    return;
+  }
 
-  // 비밀번호 변경
-  passwordChangeBtn.addEventListener("click", () => {
-    window.location.href = "/frontend/password_change.html";
-  });
+  // ✅ 여기서 바로 프로필 로드
+  try {
+    const res = await fetch("http://127.0.0.1:8080/api/users/me", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) throw new Error("인증 실패");
+
+    const data = await res.json();
+
+    document.getElementById("userName").textContent = data.name;
+    document.getElementById("userEmail").textContent = data.email;
+  } catch (err) {
+    console.error(err);
+    alert("세션이 만료되었습니다. 다시 로그인해주세요.");
+    localStorage.clear();
+    window.location.href = "./login.html";
+  }
 
   // 로그아웃
   btnLogout.addEventListener("click", async () => {
-    try {
-      const res = await fetch("/api/logout", { method: "POST" });
-      if (res.ok) {
-        await CustomModal.alert("로그아웃 되었습니다.");
-        window.location.href = "/frontend/login.html";
-      } else {
-        await CustomModal.alert("로그아웃에 실패했습니다.");
-      }
-    } catch (err) {
-      console.error(err);
-      await CustomModal.alert("서버 오류가 발생했습니다.");
-    }
-  });
-
-  // 계정 삭제
-  deleteAccountBtn.addEventListener("click", async () => {
-    if (
-      await CustomModal.alert(
-        "정말 계정을 삭제하시겠습니까? 모든 데이터가 삭제됩니다."
-      )
-    ) {
-      try {
-        const res = await fetch("/api/users/delete", { method: "DELETE" });
-        if (res.ok) {
-          await CustomModal.alert("계정이 삭제되었습니다.");
-          window.location.href = "/frontend/login.html";
-        } else {
-          await CustomModal.alert("계정 삭제에 실패했습니다.");
-        }
-      } catch (err) {
-        console.error(err);
-        await CustomModal.alert("서버 오류가 발생했습니다.");
-      }
-    }
+    localStorage.clear();
+    alert("로그아웃 되었습니다.");
+    window.location.href = "./login.html";
   });
 });
