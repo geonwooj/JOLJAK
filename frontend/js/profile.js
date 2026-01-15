@@ -28,6 +28,22 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     document.getElementById("userName").textContent = data.name;
     document.getElementById("userEmail").textContent = data.email;
+
+    // 가입일 표시 (예: 2026. 1. 15.)
+    const createdAtEl = document.getElementById("createdAt");
+    if (createdAtEl) {
+      if (data.createdAt) {
+        const dt = new Date(data.createdAt);
+        // Date 파싱 실패(Invalid Date) 대비
+        if (!isNaN(dt.getTime())) {
+          createdAtEl.textContent = dt.toLocaleDateString("ko-KR");
+        } else {
+          createdAtEl.textContent = data.createdAt; // 서버가 문자열로 주는 경우 fallback
+        }
+      } else {
+        createdAtEl.textContent = "-";
+      }
+    }
   } catch (err) {
     console.error(err);
     alert("세션이 만료되었습니다. 다시 로그인해주세요.");

@@ -41,7 +41,8 @@ public class UserController {
         return ResponseEntity.ok(
             Map.of(
                 "name", user.getName(),
-                "email", user.getEmail()
+                "email", user.getEmail(),
+                "createdAt", user.getCreatedAt()
             )
         );
     }
