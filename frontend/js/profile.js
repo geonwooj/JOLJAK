@@ -55,6 +55,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   btnLogout.addEventListener("click", async () => {
     localStorage.clear();
     alert("로그아웃 되었습니다.");
-    window.location.href = "./login.html";
+    window.location.href = "../index.html";
   });
 });
