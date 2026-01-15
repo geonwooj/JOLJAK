@@ -1,6 +1,7 @@
 package com.joljak.backend.controller;
 
 import com.joljak.backend.dto.auth.LoginRequest;
+import com.joljak.backend.dto.auth.LoginResponse;
 import com.joljak.backend.dto.auth.SignupRequest;
 import com.joljak.backend.service.AuthService;
 import com.joljak.backend.config.JwtUtil;
@@ -34,7 +35,9 @@ public class AuthController {
         try {
             var user = authService.login(request);
             String token = jwtUtil.generateToken(user.getEmail());
-            return ResponseEntity.ok(token);
+            return ResponseEntity.ok(
+            new LoginResponse(token, user.getName())
+        );
         } catch (RuntimeException e) {
             return ResponseEntity.status(401).body(e.getMessage());
         }

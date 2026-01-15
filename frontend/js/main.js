@@ -29,21 +29,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 로그인 상태 체크
   const token = localStorage.getItem("token");
+  const userName = localStorage.getItem("userName");
 
-  if (token) {
+  if (token && userName) {
     // 로그인된 상태 → 버튼을 로그아웃으로 변경
     btnLogin.innerHTML = `
       <svg viewBox="0 0 24 24" fill="none">
-        <path d="M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <path d="M6 18l12 -12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path
+          d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"
+          stroke="currentColor"
+          stroke-width="1.8"
+        />
+        <path
+          d="M4 20a8 8 0 0 1 16 0"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+        />
       </svg>
-      로그아웃
+      ${userName}님 환영합니다.
     `;
 
     btnLogin.onclick = () => {
-      localStorage.removeItem("token");
-      alert("로그아웃되었습니다.");
-      window.location.href = "./index.html";
+      window.location.href = "./pages/profile.html";
     };
   } else {
     // 로그인 안 된 상태 → 로그인 페이지 이동

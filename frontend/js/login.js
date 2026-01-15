@@ -17,30 +17,29 @@ document.querySelector(".login-form").addEventListener("submit", async (e) => {
       body: JSON.stringify({ email, password }),
     });
 
-    // 실패 응답 처리
+    // 실패 응답
     if (!response.ok) {
       const errMsg = await response.text();
       await CustomModal.alert("로그인 실패: " + errMsg);
       return;
     }
 
-    // ✅ 서버가 토큰 문자열(plain text)로 내려주는 경우: text()로 1번만 읽기
-    const token = (await response.text()).trim();
+    // ✅ JSON으로 받기 (핵심)
+    const data = await response.json();
 
-    if (!token) {
-      await CustomModal.alert("서버에서 토큰을 받지 못했습니다.");
+    if (!data.token || !data.name) {
+      await CustomModal.alert("로그인 응답이 올바르지 않습니다.");
       return;
     }
 
-    // ✅ localStorage에 토큰 저장
-    localStorage.setItem("token", token);
+    // ✅ 저장
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("userName", data.name);
 
     await CustomModal.alert("로그인 성공!");
-
-    // 메인 페이지로 이동
     window.location.href = "../index.html";
   } catch (err) {
-    await CustomModal.alert("로그인 요청 실패. 서버 확인 필요.");
     console.error(err);
+    await CustomModal.alert("로그인 요청 실패. 서버 확인 필요.");
   }
 });
