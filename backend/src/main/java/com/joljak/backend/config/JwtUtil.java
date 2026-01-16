@@ -1,31 +1,39 @@
 package com.joljak.backend.config;
 
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
+import java.security.SecureRandom;
 import java.util.Date;
 
 @Component
 public class JwtUtil {
 
-    private final Key SECRET_KEY = Keys.hmacShaKeyFor(
-            "this-is-my-super-secure-secret-key-with-64bytes-length-12345678".getBytes());
-            
+    // ✅ 서버 부팅 때마다 랜덤 키 생성 → 서버 재시작하면 기존 토큰 전부 검증 실패(=무효화)
+    private final Key secretKey;
+
+    public JwtUtil() {
+        byte[] bytes = new byte[64]; // HS256에 충분한 길이
+        new SecureRandom().nextBytes(bytes);
+        this.secretKey = Keys.hmacShaKeyFor(bytes);
+    }
+
     public String generateToken(String email) {
         return Jwts.builder()
                 .setSubject(email)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 1000L * 60 * 60)) // 1시간
-                .signWith(SECRET_KEY, SignatureAlgorithm.HS256)
+                .signWith(secretKey, SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    public String extractEmail(String token) {
+    public String extractEmail(String token) throws JwtException {
         return Jwts.parserBuilder()
-                .setSigningKey(SECRET_KEY)
+                .setSigningKey(secretKey)
                 .build()
                 .parseClaimsJws(token)
                 .getBody()
