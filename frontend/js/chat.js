@@ -65,6 +65,56 @@ if (btnLogin) {
   });
 }
 
+// 로그인 상태 체크
+const token = localStorage.getItem("token");
+const userName = localStorage.getItem("userName");
+
+if (token && userName) {
+  // 로그인된 상태 → 버튼을 로그아웃으로 변경
+  btnLogin.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none">
+        <path
+          d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"
+          stroke="currentColor"
+          stroke-width="1.8"
+        />
+        <path
+          d="M4 20a8 8 0 0 1 16 0"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+        />
+      </svg>
+      ${userName}님 환영합니다.
+    `;
+
+  btnLogin.onclick = () => {
+    window.location.href = "./profile.html";
+  };
+} else {
+  // 로그인 안 된 상태 → 로그인 페이지 이동
+  btnLogin.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none">
+        <path
+          d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"
+          stroke="currentColor"
+          stroke-width="1.8"
+        />
+        <path
+          d="M4 20a8 8 0 0 1 16 0"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+        />
+      </svg>
+      로그인 하세요
+    `;
+
+  btnLogin.onclick = () => {
+    window.location.href = "./login.html";
+  };
+}
+
 // 사이드바 토글
 const app = document.getElementById("app");
 const btnMenu = document.getElementById("btnMenu");

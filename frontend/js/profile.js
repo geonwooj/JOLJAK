@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const token = localStorage.getItem("token");
 
   if (!token) {
-    alert("로그인이 필요합니다.");
+    await CustomModal.alert("로그인이 필요합니다.");
     window.location.href = "./login.html";
     return;
   }
@@ -46,7 +46,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   } catch (err) {
     console.error(err);
-    alert("세션이 만료되었습니다. 다시 로그인해주세요.");
+    await CustomModal.alert("세션이 만료되었습니다. 다시 로그인해주세요.");
     localStorage.clear();
     window.location.href = "./login.html";
   }
@@ -54,7 +54,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   // 로그아웃
   btnLogout.addEventListener("click", async () => {
     localStorage.clear();
-    alert("로그아웃 되었습니다.");
+    await CustomModal.alert("로그아웃 되었습니다.");
     window.location.href = "../index.html";
   });
 });
