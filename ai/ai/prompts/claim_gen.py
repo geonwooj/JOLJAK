@@ -22,23 +22,14 @@ SYSTEM = """
 }
 """
 
-def get_claim_gen_prompt(
-    elements: dict,
-    diff_elements: dict,
-    field: str = DEFAULT_FIELD,
-    n_shots: int = DEFAULT_N_SHOTS,
-    temperature: float = 0.3
-) -> tuple[str, str]:
-    """
-    청구항 생성 프롬프트 생성
-    - few-shot은 여기서만 로드
-    - temperature는 llm_client에 전달용으로 함께 반환
-    """
+def build_fewshot_part(field: str, n_shots: int) -> str:
+    """few-shot 파츠 생성"""
+    if not USE_FEW_SHOT:
+        return ""
+    examples = load_claim_generation_examples(field, max_per_file=n_shots)
     fewshot_text = ""
-    if USE_FEW_SHOT:
-        examples = load_claim_generation_examples(field, max_per_file=n_shots)
-        for ex in examples:
-            fewshot_text += f"""[예시 입력]
+    for ex in examples:
+        fewshot_text += f"""[예시 입력]
 발명 개요: {ex.get('user_idea', '')}
 차별 요소: {json.dumps(ex.get('diff', {}), ensure_ascii=False)}
 
@@ -50,23 +41,50 @@ def get_claim_gen_prompt(
 
 ────────────────────────
 """
+    return fewshot_text
 
-    user_prompt = f"""
-{fewshot_text}
+def build_invention_overview_part(elements: dict) -> str:
+    """발명 개요 파츠"""
+    title = elements.get('title', '')
+    abstract = elements.get('abstract', '')
+    if not title and not abstract:
+        return "[현재 발명 개요]\n(발명 개요 정보 없음 - 차별 요소 중심으로 진행)\n"
+    return f"[현재 발명 개요]\n{title}\n{abstract}\n"
 
-[현재 발명 개요]
-{elements.get('title', '')}
-{elements.get('abstract', '')}
+def build_diff_part(diff_elements: dict) -> str:
+    """차별 요소 파츠"""
+    user_only = json.dumps(diff_elements.get('user_only', []), ensure_ascii=False)
+    return f"[선행 특허와의 차별 요소]\n사용자 고유 요소: {user_only}\n"
 
-[선행 특허와의 차별 요소]
-사용자 고유 요소: {json.dumps(diff_elements.get('user_only', []), ensure_ascii=False)}
+def build_prior_claims_part(elements: dict) -> str:
+    """선행 청구항 파츠"""
+    claims = json.dumps(elements.get('claims_structured', {}), ensure_ascii=False, indent=2)
+    return f"[참고 선행 특허 청구항]\n{claims}\n"
 
-[참고 선행 특허 청구항]
-{json.dumps(elements.get('claims_structured', {}), ensure_ascii=False, indent=2)}
-
-[지시]
+def build_instruction_part() -> str:
+    """지시 파츠 (고정)"""
+    return """[지시]
 위 예시 문체를 정확히 따르며 차별 요소를 중심으로 청구항을 작성하라.
 독립항 1개 + 종속항 2~4개 생성.
 """
+
+def get_claim_gen_prompt(
+    elements: dict,
+    diff_elements: dict,
+    field: str = DEFAULT_FIELD,
+    n_shots: int = DEFAULT_N_SHOTS,
+    temperature: float = 0.3
+) -> tuple[str, str]:
+    """
+    청구항 생성 프롬프트 생성
+    """
+    parts = [
+        build_fewshot_part(field, n_shots),
+        build_invention_overview_part(elements),
+        build_diff_part(diff_elements),
+        build_prior_claims_part(elements),
+        build_instruction_part()
+    ]
+    user_prompt = "\n".join(part for part in parts if part.strip())
 
     return SYSTEM, user_prompt
