@@ -11,11 +11,17 @@
       <aside class="side">
         <div class="side__spacer"></div>
 
-        <nav class="side__content">
+        <nav class="side__content" id="sideContent">
           <a class="side-item" href="./pages/chat.html">
             <span class="side-item__icon">💬</span>
             <span class="side-item__text">AI Patnet Office 사용 방법</span>
           </a>
+
+          <!-- ✅ 최근 채팅 5개 (JS로 채움) -->
+          <div class="side-section">
+            <div class="side-section__title">내 채팅</div>
+            <div id="myChatList" class="side-section__list"></div>
+          </div>
         </nav>
 
         <div class="side__footer">데모 버전</div>

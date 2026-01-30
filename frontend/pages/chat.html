@@ -1,208 +1,99 @@
 <!DOCTYPE html>
 <html lang="ko">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Patent Office • 채팅</title>
 
-    <!-- 공통(메인에서 쓰던) -->
-    <link rel="stylesheet" href="../css/main.css" />
-    <!-- 채팅 전용 -->
-    <link rel="stylesheet" href="../css/chat.css" />
-  </head>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Patent Office • 채팅</title>
 
-  <body>
-    <div class="app" id="app">
-      <!-- Sidebar -->
-      <aside class="side">
-        <div class="side__spacer"></div>
+  <!-- 공통(메인에서 쓰던) -->
+  <link rel="stylesheet" href="../css/main.css" />
+  <!-- 채팅 전용 -->
+  <link rel="stylesheet" href="../css/chat.css" />
+</head>
 
-        <nav class="side__content">
-          <a class="side-item is-active" href="./chat.html">
-            <span class="side-item__icon">💬</span>
-            <span class="side-item__text">AI Patnet Office 사용 방법</span>
-          </a>
-        </nav>
+<body>
+  <div class="app" id="app">
+    <!-- Sidebar -->
+    <aside class="side">
+      <div class="side__spacer"></div>
 
-        <div class="side__footer">데모 버전</div>
-      </aside>
+      <nav class="side__content" id="sideContent">
+        <!-- ✅ 새 채팅 -->
+        <a class="side-item new-chat" id="newChatBtn">
+          <span class="side-item__icon">＋</span>
+          <span class="side-item__text">새 채팅</span>
+        </a>
 
-      <!-- Main -->
-      <main class="main">
-        <!-- Top -->
-        <header class="top">
-          <div class="top__left">
-            <button
-              class="icon-btn"
-              id="btnMenu"
-              type="button"
-              aria-label="메뉴 열기/닫기"
-            >
-              <!-- hamburger -->
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path
-                  d="M3 6h18"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                />
-                <path
-                  d="M3 12h18"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                />
-                <path
-                  d="M3 18h18"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                />
-              </svg>
-            </button>
-            <h1>
-              <a href="../index.html" class="top-home-link">AI Patent Office</a>
-            </h1>
-          </div>
+        <!-- ✅ 최근 채팅 5개 (JS로 채움) -->
+        <div class="side-section">
+          <div class="side-section__title">내 채팅</div>
+          <div id="myChatList" class="side-section__list"></div>
+        </div>
+      </nav>
 
-          <button class="btn" id="btnLogin" type="button">
+      <div class="side__footer">데모 버전</div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <!-- Top -->
+      <header class="top">
+        <div class="top__left">
+          <button class="icon-btn" id="btnMenu" type="button" aria-label="메뉴 열기/닫기">
+            <!-- hamburger -->
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path
-                d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"
-                stroke="currentColor"
-                stroke-width="1.8"
-              />
-              <path
-                d="M4 20a8 8 0 0 1 16 0"
-                stroke="currentColor"
-                stroke-width="1.8"
-                stroke-linecap="round"
-              />
+              <path d="M3 6h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              <path d="M3 12h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              <path d="M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
             </svg>
-            로그인 하세요
           </button>
-        </header>
+          <h1>
+            <a href="../index.html" class="top-home-link">AI Patent Office</a>
+          </h1>
+        </div>
 
-        <!-- Chat content -->
-        <section class="chat">
-          <div class="chat-wrap" id="chatWrap">
-            <!-- Q1 -->
-            <div class="msg msg--q">
-              <div class="msg__avatar msg__avatar--q" aria-hidden="true">Q</div>
-              <div class="msg__bubble">
-                <div class="msg__title">
-                  AI Patent Office는 어떻게 사용하나요?
-                </div>
-              </div>
-            </div>
+        <button class="btn" id="btnLogin" type="button">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" stroke="currentColor" stroke-width="1.8" />
+            <path d="M4 20a8 8 0 0 1 16 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+          </svg>
+          로그인 하세요
+        </button>
+      </header>
 
-            <!-- A1 -->
-            <div class="msg msg--a">
-              <div class="msg__avatar msg__avatar--a" aria-hidden="true">A</div>
-              <div class="msg__bubble msg__bubble--a">
-                <div class="msg__text">
-                  AI Patent Office에 오신 것을 환영합니다! 이 서비스는 특허 관련
-                  업무를 AI로 지원하는 플랫폼입니다.<br /><br />
-                  주요 기능은 다음과 같습니다:<br /><br />
-                  1. <b>특허 검색</b>: 기존 특허를 빠르게 검색하고 분석할 수
-                  있습니다.<br />
-                  2. <b>선행기술 조사</b>: AI가 관련 선행기술을 자동으로
-                  찾아드립니다.<br />
-                  3. <b>특허 문서 작성 지원</b>: 특허 명세서 작성을
-                  도와드립니다.<br />
-                  4. <b>특허성 분석</b>: 아이디어의 특허 가능성을 평가합니다.<br /><br />
-                  궁금한 점이 있으시면 언제든 질문해주세요!
-                </div>
-              </div>
-            </div>
+      <!-- Chat content -->
+      <section class="chat">
+        <div class="chat-wrap" id="chatWrap"></div>
+      </section>
 
-            <!-- Q2 -->
-            <div class="msg msg--q">
-              <div class="msg__avatar msg__avatar--q" aria-hidden="true">Q</div>
-              <div class="msg__bubble">
-                <div class="msg__title">특허 검색은 어떻게 하나요?</div>
-              </div>
-            </div>
+      <!-- Bottom input -->
+      <footer class="bottom">
+        <div class="composer">
+          <button class="circle" type="button" aria-label="추가">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 5v14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              <path d="M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
 
-            <!-- A2 -->
-            <div class="msg msg--a">
-              <div class="msg__avatar msg__avatar--a" aria-hidden="true">A</div>
-              <div class="msg__bubble msg__bubble--a">
-                <div class="msg__text">
-                  특허 검색은 매우 간단합니다!<br /><br />
-                  검색하고 싶은 키워드나 기술 분야를 입력해주시면, AI가 다음과
-                  같은 정보를 제공합니다:<br /><br />
-                  • 관련 특허 목록<br />
-                  • 주요 청구항 요약<br />
-                  • 특허권자 정보<br />
-                  • 출원/등록 날짜<br />
-                  • 기술 분류 정보<br /><br />
-                  예를 들어, "스마트폰 카메라 기술" 또는 "전기차 배터리"와 같이
-                  검색하고 싶은 내용을 말씀해주세요.
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+          <input id="messageInput" type="text" placeholder="메시지를 입력하세요..." />
 
-        <!-- Bottom input -->
-        <footer class="bottom">
-          <div class="composer">
-            <button class="circle" type="button" aria-label="추가">
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path
-                  d="M12 5v14"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                />
-                <path
-                  d="M5 12h14"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                />
-              </svg>
-            </button>
+          <button class="circle send" id="btnSend" type="button" aria-label="전송" disabled>
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M22 2 11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+              <path d="M22 2 15 22l-4-9-9-4 20-7Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+            </svg>
+          </button>
+        </div>
 
-            <input
-              id="messageInput"
-              type="text"
-              placeholder="메시지를 입력하세요..."
-            />
+        <small>AI Patent Office는 실수를 할 수 있습니다. 중요한 정보는
+          확인하세요.</small>
+      </footer>
+    </main>
+  </div>
 
-            <button
-              class="circle send"
-              id="btnSend"
-              type="button"
-              aria-label="전송"
-              disabled
-            >
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path
-                  d="M22 2 11 13"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                />
-                <path
-                  d="M22 2 15 22l-4-9-9-4 20-7Z"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </button>
-          </div>
+  <script src="../js/chat.js"></script>
+</body>
 
-          <small
-            >AI Patent Office는 실수를 할 수 있습니다. 중요한 정보는
-            확인하세요.</small
-          >
-        </footer>
-      </main>
-    </div>
-
-    <script src="../js/chat.js"></script>
-  </body>
 </html>
