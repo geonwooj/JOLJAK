@@ -21,18 +21,19 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: 
-    password: 
+    username: 본인 이메일 입력
+    password: "앱 비밀번호 입력"
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true
+            required: true
 
 app:
   mail:
-    from: 
+    from: 위에거랑 같은 이메일 입력
   email-verification:
     expiry-minutes: 5
 
