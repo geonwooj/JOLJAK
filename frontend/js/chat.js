@@ -3,16 +3,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const input = document.getElementById("messageInput");
   const btnSend = document.getElementById("btnSend");
-  const btnLogin = document.getElementById("btnLogin");
   const chatWrap = document.getElementById("chatWrap");
   const myChatList = document.getElementById("myChatList");
   const newChatBtn = document.getElementById("newChatBtn");
-
-  newChatBtn?.addEventListener("click", (e) => {
-    e.preventDefault();
-    localStorage.removeItem("chatId");
-    window.location.href = "../index.html";
-  });
 
   const app = document.getElementById("app");
   const btnMenu = document.getElementById("btnMenu");
@@ -21,219 +14,37 @@ document.addEventListener("DOMContentLoaded", () => {
   const urlParams = new URLSearchParams(window.location.search);
   const chatId = urlParams.get("chatId");
 
-  function updateSendState() {
-    const hasText = input.value.trim().length > 0;
-    btnSend.disabled = !hasText;
+  function getToken() {
+    return localStorage.getItem("token") || "";
   }
 
-  input.addEventListener("input", updateSendState);
+  function authHeaders() {
+    const token = getToken();
+    if (!token) return { "Content-Type": "application/json" };
+    return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+  }
 
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      if (!btnSend.disabled) btnSend.click();
-    }
+  function updateSendState() {
+    const hasText = (input?.value || "").trim().length > 0;
+    if (btnSend) btnSend.disabled = !hasText;
+  }
+
+  input?.addEventListener("input", updateSendState);
+  updateSendState();
+
+  // ====== 채팅 목록 UI: 렌더 + 삭제 메뉴(메인과 동일) ======
+
+  function closeAllDropdowns() {
+    document.querySelectorAll(".chat-item.is-open").forEach((el) => el.classList.remove("is-open"));
+  }
+
+  document.addEventListener("click", (e) => {
+    const clickedInside = e.target.closest(".chat-item");
+    if (!clickedInside) closeAllDropdowns();
   });
 
-  function setLoggedOutUI() {
-    if (!btnLogin) return;
-
-    btnLogin.innerHTML = `
-      <svg viewBox="0 0 24 24" fill="none">
-        <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" stroke="currentColor" stroke-width="1.8" />
-        <path d="M4 20a8 8 0 0 1 16 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-      </svg>
-      로그인 하세요
-    `;
-
-    btnLogin.onclick = () => {
-      window.location.href = "./login.html";
-    };
-  }
-
-  function setLoggedInUI(name) {
-    if (!btnLogin) return;
-
-    btnLogin.innerHTML = `
-      <svg viewBox="0 0 24 24" fill="none">
-        <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" stroke="currentColor" stroke-width="1.8" />
-        <path d="M4 20a8 8 0 0 1 16 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-      </svg>
-      ${name}님 환영합니다.
-    `;
-
-    btnLogin.onclick = () => {
-      window.location.href = "./profile.html";
-    };
-  }
-
-  async function bootstrapAuth() {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setLoggedOutUI();
-      renderEmptyHint();
-      return null;
-    }
-
-    try {
-      const res = await fetch(`${API_BASE}/api/users/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!res.ok) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("userName");
-        setLoggedOutUI();
-        renderEmptyHint();
-        return null;
-      }
-
-      const me = await res.json();
-      const name = me?.name || "사용자";
-      localStorage.setItem("userName", name);
-      setLoggedInUI(name);
-
-      return token;
-    } catch (e) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("userName");
-      setLoggedOutUI();
-      renderEmptyHint();
-      return null;
-    }
-  }
-
-  function renderEmptyHint() {
-    if (!chatWrap) return;
-    chatWrap.innerHTML = `
-      <div class="msg msg--a">
-        <div class="msg__avatar msg__avatar--a" aria-hidden="true">A</div>
-        <div class="msg__bubble msg__bubble--a">
-          <div class="msg__text">index.html에서 질문을 입력하고 전송하면 이곳에 대화가 표시됩니다.</div>
-        </div>
-      </div>
-    `;
-  }
-
-  function renderMessages(messages) {
-    if (!chatWrap) return;
-    chatWrap.innerHTML = "";
-
-    if (!Array.isArray(messages) || messages.length === 0) {
-      renderEmptyHint();
-      return;
-    }
-
-    messages.forEach((m) => {
-      if (m.role === "USER") {
-        appendUserMessage(m.content);
-      } else {
-        appendAiMessage(m.content);
-      }
-    });
-
-    scrollToBottom();
-  }
-
-  function appendUserMessage(text) {
-    const q = document.createElement("div");
-    q.className = "msg msg--q";
-    q.innerHTML = `
-      <div class="msg__avatar msg__avatar--q" aria-hidden="true">Q</div>
-      <div class="msg__bubble"><div class="msg__title"></div></div>
-    `;
-    q.querySelector(".msg__title").textContent = text;
-    chatWrap.appendChild(q);
-  }
-
-  function appendAiMessage(text) {
-    const a = document.createElement("div");
-    a.className = "msg msg--a";
-    a.innerHTML = `
-      <div class="msg__avatar msg__avatar--a" aria-hidden="true">A</div>
-      <div class="msg__bubble msg__bubble--a">
-        <div class="msg__text"></div>
-      </div>
-    `;
-    a.querySelector(".msg__text").textContent = text;
-    chatWrap.appendChild(a);
-  }
-
-  function scrollToBottom() {
-    const container = chatWrap?.parentElement;
-    if (!container) return;
-    container.scrollTo({ top: container.scrollHeight, behavior: "smooth" });
-  }
-
-  async function loadMessages(token) {
-    if (!chatId) {
-      renderEmptyHint();
-      return;
-    }
-
-    try {
-      const res = await fetch(`${API_BASE}/api/chats/${chatId}/messages`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!res.ok) {
-        if (res.status === 401) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("userName");
-          window.location.href = "./login.html";
-          return;
-        }
-        renderEmptyHint();
-        return;
-      }
-
-      const messages = await res.json();
-      renderMessages(messages);
-    } catch (e) {
-      renderEmptyHint();
-    }
-  }
-
-  async function loadRecentChats(token) {
-    if (!myChatList) return;
-
-    try {
-      const res = await fetch(`${API_BASE}/api/chats/recent`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!res.ok) {
-        myChatList.innerHTML =
-          '<div class="side-item" style="opacity:.6; cursor:default;">채팅 없음</div>';
-        return;
-      }
-
-      const rooms = await res.json();
-      if (!Array.isArray(rooms) || rooms.length === 0) {
-        myChatList.innerHTML =
-          '<div class="side-item" style="opacity:.6; cursor:default;">채팅 없음</div>';
-        return;
-      }
-
-      myChatList.innerHTML = rooms
-        .map((r) => {
-          const active = String(r.id) === String(chatId) ? "is-active" : "";
-          return `
-            <a class="side-item ${active}" href="./chat.html?chatId=${r.id}">
-              <span class="side-item__icon">🗨️</span>
-              <span class="side-item__text">${escapeHtml(r.title)}</span>
-            </a>
-          `;
-        })
-        .join("");
-    } catch (e) {
-      myChatList.innerHTML =
-        '<div class="side-item" style="opacity:.6; cursor:default;">불러오기 실패</div>';
-    }
-  }
-
   function escapeHtml(str) {
-    return String(str)
+    return String(str ?? "")
       .replaceAll("&", "&amp;")
       .replaceAll("<", "&lt;")
       .replaceAll(">", "&gt;")
@@ -241,84 +52,229 @@ document.addEventListener("DOMContentLoaded", () => {
       .replaceAll("'", "&#039;");
   }
 
-  btnSend.addEventListener("click", async () => {
-    const text = input.value.trim();
-    if (!text) return;
+  function createChatItem(room) {
+    const id = room.chatId ?? room.id;
+    const title = room.title ?? "새 채팅";
 
-    const token = localStorage.getItem("token");
+    const wrapper = document.createElement("div");
+    wrapper.className = "chat-item";
+    wrapper.dataset.chatId = String(id);
+
+    wrapper.innerHTML = `
+      <a class="side-item" href="./chat.html?chatId=${encodeURIComponent(id)}">
+        <span class="side-item__icon">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M5 6.5C5 5.12 6.12 4 7.5 4h9C17.88 4 19 5.12 19 6.5v6c0 1.38-1.12 2.5-2.5 2.5H10l-3.2 2.4c-.53.4-1.3.02-1.3-.64V15c-.95-.44-1.5-1.34-1.5-2.5v-6Z"
+              stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="side-item__text">${escapeHtml(title)}</span>
+      </a>
+
+      <button type="button" class="chat-item__more" aria-label="더보기">⋯</button>
+
+      <div class="chat-item__dropdown" role="menu">
+        <button type="button" class="chat-item__action" data-action="delete">삭제</button>
+      </div>
+    `;
+
+    const btnMore = wrapper.querySelector(".chat-item__more");
+    btnMore.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const isOpen = wrapper.classList.contains("is-open");
+      closeAllDropdowns();
+      if (!isOpen) wrapper.classList.add("is-open");
+    });
+
+    const btnDelete = wrapper.querySelector('[data-action="delete"]');
+    btnDelete.addEventListener("click", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closeAllDropdowns();
+
+      const ok = confirm("이 채팅을 삭제할까요?");
+      if (!ok) return;
+
+      await deleteChatRoom(id);
+      await loadRecentChats();
+
+      // 현재 보고 있는 채팅을 삭제한 경우 → index로
+      if (String(id) === String(chatId)) {
+        window.location.href = "../index.html";
+      }
+    });
+
+    return wrapper;
+  }
+
+  async function deleteChatRoom(id) {
+    try {
+      const res = await fetch(`${API_BASE}/api/chats/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        headers: authHeaders(),
+      });
+      const text = await res.text();
+      if (!res.ok) alert("삭제 실패: " + text);
+    } catch (err) {
+      console.error(err);
+      alert("서버 연결 실패");
+    }
+  }
+
+  async function loadRecentChats() {
+    if (!myChatList) return;
+    myChatList.innerHTML = "";
+
+    const token = getToken();
+    if (!token) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/chats/recent`, {
+        method: "GET",
+        headers: authHeaders(),
+      });
+      if (!res.ok) return;
+
+      const rooms = await res.json();
+      rooms.forEach((room) => myChatList.appendChild(createChatItem(room)));
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  // ====== chat.html: 메시지 렌더 ======
+
+  function renderMessage(role, text) {
+    if (!chatWrap) return;
+
+    const item = document.createElement("div");
+    item.className = role === "USER" ? "chat-bubble chat-bubble--user" : "chat-bubble chat-bubble--ai";
+    item.textContent = text ?? "";
+    chatWrap.appendChild(item);
+
+    // 스크롤 맨 아래로
+    chatWrap.scrollTop = chatWrap.scrollHeight;
+  }
+
+  function clearMessages() {
+    if (chatWrap) chatWrap.innerHTML = "";
+  }
+
+  async function loadMessages() {
+    if (!chatId) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/chats/${encodeURIComponent(chatId)}/messages`, {
+        method: "GET",
+        headers: authHeaders(),
+      });
+
+      const text = await res.text();
+      if (!res.ok) {
+        alert("메시지 로드 실패: " + text);
+        return;
+      }
+
+      let messages;
+      try {
+        messages = JSON.parse(text);
+      } catch {
+        alert("메시지 응답이 JSON이 아닙니다: " + text);
+        return;
+      }
+
+      clearMessages();
+      messages.forEach((m) => {
+        // m: { role, content } 또는 { role, message } 형태 가능
+        const role = m.role;
+        const content = m.content ?? m.message ?? "";
+        renderMessage(role, content);
+      });
+    } catch (err) {
+      console.error(err);
+      alert("서버 연결 실패");
+    }
+  }
+
+  // ====== chat.html: 메시지 보내기 (추가 질문) ======
+
+  async function sendMessage() {
+    const msg = (input?.value || "").trim();
+    if (!msg) return;
+
+    const token = getToken();
     if (!token) {
-      window.location.href = "./login.html";
+      alert("로그인이 필요합니다.");
       return;
     }
 
     if (!chatId) {
-      // chatId가 없으면 새 채팅을 start로 만들고 현재 페이지를 그 chatId로 이동
-      try {
-        const res = await fetch(`${API_BASE}/api/chats/start`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ message: text }),
-        });
-
-        if (!res.ok) {
-          alert("채팅 저장 실패");
-          return;
-        }
-
-        const data = await res.json();
-        window.location.href = `./chat.html?chatId=${data.chatId}`;
-        return;
-      } catch (e) {
-        alert("서버 연결 실패");
-        return;
-      }
+      alert("채팅방 ID가 없습니다. index에서 새로 시작하세요.");
+      return;
     }
 
+    btnSend.disabled = true;
+
     try {
-      const res = await fetch(`${API_BASE}/api/chats/${chatId}/messages`, {
+      const res = await fetch(`${API_BASE}/api/chats/${encodeURIComponent(chatId)}/messages`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ message: text }),
+        headers: authHeaders(),
+        body: JSON.stringify({ message: msg }),
       });
 
+      const text = await res.text();
       if (!res.ok) {
-        if (res.status === 401) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("userName");
-          window.location.href = "./login.html";
-          return;
-        }
-        const err = await res.text();
-        alert("전송 실패: " + err);
+        alert("전송 실패: " + text);
+        updateSendState();
         return;
       }
 
-      const messages = await res.json();
+      let messages;
+      try {
+        messages = JSON.parse(text);
+      } catch {
+        alert("전송 응답이 JSON이 아닙니다: " + text);
+        updateSendState();
+        return;
+      }
+
       input.value = "";
       updateSendState();
 
-      // 전체 다시 렌더 (가장 단순/안전)
-      renderMessages(messages);
-      await loadRecentChats(token);
-    } catch (e) {
+      // 서버에서 전체 메시지를 내려주는 방식이라면 통째로 다시 렌더
+      clearMessages();
+      messages.forEach((m) => {
+        const role = m.role;
+        const content = m.content ?? m.message ?? "";
+        renderMessage(role, content);
+      });
+
+      // 최근 채팅 목록 갱신
+      await loadRecentChats();
+    } catch (err) {
+      console.error(err);
       alert("서버 연결 실패");
+      updateSendState();
+    }
+  }
+
+  btnSend?.addEventListener("click", sendMessage);
+  input?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      sendMessage();
     }
   });
 
-  (async () => {
-    const token = await bootstrapAuth();
-    updateSendState();
+  // ====== 새 채팅 버튼 ======
+  newChatBtn?.addEventListener("click", () => {
+    // 채팅 페이지에서 새 채팅은 index로 보내는게 UX 깔끔
+    window.location.href = "../index.html";
+  });
 
-    if (token) {
-      await loadRecentChats(token);
-      await loadMessages(token);
-    }
-  })();
-
+  // 초기 실행
+  loadRecentChats();
+  loadMessages();
 });

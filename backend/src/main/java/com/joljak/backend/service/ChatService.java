@@ -70,6 +70,20 @@ public class ChatService {
         return chatMessageRepository.findByRoomIdOrderByCreatedAtAsc(roomId);
     }
 
+    @Transactional
+    public void deleteRoom(Long roomId, String userEmail) {
+        ChatRoom room = chatRoomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("채팅방이 존재하지 않습니다."));
+
+        if (!room.getUserEmail().equals(userEmail)) {
+            throw new IllegalArgumentException("권한이 없습니다.");
+        }
+
+        // FK 때문에 메시지 먼저 삭제
+        chatMessageRepository.deleteByRoomId(roomId);
+        chatRoomRepository.delete(room);
+    }
+
     private String makeTitle(String message) {
         String trimmed = message == null ? "" : message.trim();
         if (trimmed.isEmpty()) return "새 채팅";

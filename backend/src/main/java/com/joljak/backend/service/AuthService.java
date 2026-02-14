@@ -24,6 +24,10 @@ public class AuthService {
 
     private final SecureRandom random = new SecureRandom();
 
+    // ✅ 비밀번호 정책: 8자 이상 + 대문자/소문자/숫자/특수문자 모두 포함
+    private static final String PASSWORD_POLICY_REGEX =
+            "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,}$";
+
     public AuthService(UserRepository userRepository,
             EmailVerificationRepository emailVerificationRepository,
             MailService mailService) {
@@ -68,6 +72,19 @@ public class AuthService {
 
     // ✅ 회원가입 (이메일 인증 완료된 이메일만 허용)
     public User signup(SignupRequest request) {
+        if (request == null) {
+            throw new RuntimeException("잘못된 요청입니다.");
+        }
+
+        if (!request.isTermsAccepted()) {
+            throw new RuntimeException("이용약관 및 개인정보처리방침에 동의해야 회원가입이 가능합니다.");
+        }
+
+        String pw = request.getPassword() == null ? "" : request.getPassword().trim();
+        if (!pw.matches(PASSWORD_POLICY_REGEX)) {
+            throw new RuntimeException("비밀번호는 8자리 이상이며 영문/숫자/특수문자를 포함해야 합니다.");
+        }
+
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("email already exists");
         }
@@ -86,7 +103,7 @@ public class AuthService {
 
         User user = new User(
                 request.getEmail(),
-                request.getPassword(),
+                pw,
                 request.getName(),
                 true);
 

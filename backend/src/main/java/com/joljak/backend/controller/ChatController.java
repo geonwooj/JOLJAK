@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
-
 @RestController
 @RequestMapping("/api/chats")
 public class ChatController {
@@ -95,6 +94,23 @@ public class ChatController {
             List<ChatMessage> all = chatService.addUserMessage(chatId, email, req.getMessage());
             List<ChatMessageResponse> messages = all.stream().map(ChatMessageResponse::from).toList();
             return ResponseEntity.ok(messages);
+        } catch (JwtException e) {
+            return ResponseEntity.status(401).body("Unauthorized");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // ✅ 채팅방 삭제(메시지 포함)
+    @DeleteMapping("/{chatId}")
+    public ResponseEntity<?> delete(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @PathVariable Long chatId
+    ) {
+        try {
+            String email = extractEmail(authHeader);
+            chatService.deleteRoom(chatId, email);
+            return ResponseEntity.ok("삭제 완료");
         } catch (JwtException e) {
             return ResponseEntity.status(401).body("Unauthorized");
         } catch (IllegalArgumentException e) {

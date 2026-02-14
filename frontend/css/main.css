@@ -376,3 +376,75 @@ svg {
   width: 48px;
   height: 48px;
 }
+
+/* ===== Chat list (3-dots menu on hover) ===== */
+.chat-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.chat-item .side-item {
+  flex: 1;
+  padding-right: 40px; /* 메뉴 버튼 자리 */
+}
+
+.chat-item__more {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.chat-item:hover .chat-item__more {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.chat-item__more:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.chat-item__dropdown {
+  position: absolute;
+  right: 8px;
+  top: calc(50% + 16px);
+  transform: translateY(0);
+  min-width: 92px;
+  padding: 6px;
+  border-radius: 10px;
+  background: rgba(20, 20, 24, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  display: none;
+  z-index: 30;
+}
+
+.chat-item.is-open .chat-item__dropdown {
+  display: block;
+}
+
+.chat-item__action {
+  width: 100%;
+  height: 34px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.92);
+  text-align: left;
+  padding: 0 10px;
+  cursor: pointer;
+}
+
+.chat-item__action:hover {
+  background: rgba(255, 255, 255, 0.10);
+}
