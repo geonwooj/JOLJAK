@@ -446,5 +446,30 @@ svg {
 }
 
 .chat-item__action:hover {
-  background: rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+#sendCodeBtn,
+#verifyCodeBtn {
+  height: 36px;
+  padding: 0 16px;
+  margin-top: 10px;
+  border-radius: 8px;
+  border: 1px solid #111;
+  background: white;
+  color: #111;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+#sendCodeBtn:hover,
+#verifyCodeBtn:hover {
+  background: #111;
+  color: white;
+}
+
+.side-section__title {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  font-weight: 500;
 }

@@ -9,7 +9,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const app = document.getElementById("app");
   const btnMenu = document.getElementById("btnMenu");
-  btnMenu?.addEventListener("click", () => app.classList.toggle("is-collapsed"));
+  btnMenu?.addEventListener("click", () =>
+    app.classList.toggle("is-collapsed"),
+  );
 
   const urlParams = new URLSearchParams(window.location.search);
   const chatId = urlParams.get("chatId");
@@ -21,7 +23,10 @@ document.addEventListener("DOMContentLoaded", () => {
   function authHeaders() {
     const token = getToken();
     if (!token) return { "Content-Type": "application/json" };
-    return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+    return {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    };
   }
 
   function updateSendState() {
@@ -35,7 +40,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // ====== 채팅 목록 UI: 렌더 + 삭제 메뉴(메인과 동일) ======
 
   function closeAllDropdowns() {
-    document.querySelectorAll(".chat-item.is-open").forEach((el) => el.classList.remove("is-open"));
+    document
+      .querySelectorAll(".chat-item.is-open")
+      .forEach((el) => el.classList.remove("is-open"));
   }
 
   document.addEventListener("click", (e) => {
@@ -111,10 +118,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function deleteChatRoom(id) {
     try {
-      const res = await fetch(`${API_BASE}/api/chats/${encodeURIComponent(id)}`, {
-        method: "DELETE",
-        headers: authHeaders(),
-      });
+      const res = await fetch(
+        `${API_BASE}/api/chats/${encodeURIComponent(id)}`,
+        {
+          method: "DELETE",
+          headers: authHeaders(),
+        },
+      );
       const text = await res.text();
       if (!res.ok) alert("삭제 실패: " + text);
     } catch (err) {
@@ -149,12 +159,21 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderMessage(role, text) {
     if (!chatWrap) return;
 
-    const item = document.createElement("div");
-    item.className = role === "USER" ? "chat-bubble chat-bubble--user" : "chat-bubble chat-bubble--ai";
-    item.textContent = text ?? "";
-    chatWrap.appendChild(item);
+    const isUser = role === "USER";
 
-    // 스크롤 맨 아래로
+    const item = document.createElement("div");
+    item.className = isUser ? "msg msg--user" : "msg";
+
+    item.innerHTML = `
+    <div class="msg__avatar ${isUser ? "msg__avatar--q" : "msg__avatar--a"}">
+      ${isUser ? "Q" : "A"}
+    </div>
+    <div class="msg__bubble ${!isUser ? "msg__bubble--a" : ""}">
+      <div class="msg__text">${text ?? ""}</div>
+    </div>
+  `;
+
+    chatWrap.appendChild(item);
     chatWrap.scrollTop = chatWrap.scrollHeight;
   }
 
@@ -166,10 +185,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!chatId) return;
 
     try {
-      const res = await fetch(`${API_BASE}/api/chats/${encodeURIComponent(chatId)}/messages`, {
-        method: "GET",
-        headers: authHeaders(),
-      });
+      const res = await fetch(
+        `${API_BASE}/api/chats/${encodeURIComponent(chatId)}/messages`,
+        {
+          method: "GET",
+          headers: authHeaders(),
+        },
+      );
 
       const text = await res.text();
       if (!res.ok) {
@@ -218,11 +240,14 @@ document.addEventListener("DOMContentLoaded", () => {
     btnSend.disabled = true;
 
     try {
-      const res = await fetch(`${API_BASE}/api/chats/${encodeURIComponent(chatId)}/messages`, {
-        method: "POST",
-        headers: authHeaders(),
-        body: JSON.stringify({ message: msg }),
-      });
+      const res = await fetch(
+        `${API_BASE}/api/chats/${encodeURIComponent(chatId)}/messages`,
+        {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify({ message: msg }),
+        },
+      );
 
       const text = await res.text();
       if (!res.ok) {
