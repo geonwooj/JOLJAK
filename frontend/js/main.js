@@ -7,11 +7,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const newChatBtn = document.getElementById("newChatBtn");
 
   const btnLogin = document.getElementById("btnLogin");
-
   btnLogin?.addEventListener("click", () => {
     window.location.href = "./pages/login.html";
   });
-
 
   const app = document.getElementById("app");
   const btnMenu = document.getElementById("btnMenu");
@@ -19,6 +17,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function getToken() {
     return localStorage.getItem("token") || "";
+  }
+
+  // ✅ 토큰이 "있다"가 아니라, 서버에서 200으로 확인됐을 때만 로그인으로 간주
+  let authConfirmed = false;
+
+  function renderAuthUI() {
+    if (!btnLogin) return;
+
+    // 기본: 무조건 로그인 버튼 보이게(초기 깜빡임/none 박힘 방지)
+    btnLogin.style.removeProperty("display");
+    btnLogin.style.display = "inline-flex";
+
+    // 서버 확인 완료면 숨김
+    if (authConfirmed) {
+      btnLogin.style.display = "none";
+    }
+
+    // (선택) 유저이름 표시
+    const userName = localStorage.getItem("userName");
+    const userNameEl = document.getElementById("userNameText");
+    if (userNameEl) userNameEl.textContent = authConfirmed && userName ? userName : "";
   }
 
   function authHeaders() {
@@ -56,7 +75,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function createChatItem(room) {
-    // room: { chatId or id, title, updatedAt }
     const chatId = room.chatId ?? room.id;
     const title = room.title ?? "새 채팅";
 
@@ -64,7 +82,6 @@ document.addEventListener("DOMContentLoaded", () => {
     wrapper.className = "chat-item";
     wrapper.dataset.chatId = String(chatId);
 
-    // 기존 사이드바 스타일(.side-item)을 그대로 사용
     wrapper.innerHTML = `
       <a class="side-item" href="./pages/chat.html?chatId=${encodeURIComponent(chatId)}">
         <span class="side-item__icon">
@@ -83,7 +100,6 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
     `;
 
-    // ⋯ 버튼 토글
     const btnMore = wrapper.querySelector(".chat-item__more");
     btnMore.addEventListener("click", (e) => {
       e.preventDefault();
@@ -94,7 +110,6 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!isOpen) wrapper.classList.add("is-open");
     });
 
-    // 드롭다운 액션
     const btnDelete = wrapper.querySelector('[data-action="delete"]');
     btnDelete.addEventListener("click", async (e) => {
       e.preventDefault();
@@ -120,9 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       const text = await res.text();
-      if (!res.ok) {
-        alert("삭제 실패: " + text);
-      }
+      if (!res.ok) alert("삭제 실패: " + text);
     } catch (err) {
       console.error(err);
       alert("서버 연결 실패");
@@ -134,7 +147,13 @@ document.addEventListener("DOMContentLoaded", () => {
     myChatList.innerHTML = "";
 
     const token = getToken();
-    if (!token) return; // 로그인 전이면 목록 비워둠
+
+    // ✅ 토큰 없으면: 로그인 미확인 상태, 버튼 보여주고 종료
+    if (!token) {
+      authConfirmed = false;
+      renderAuthUI();
+      return;
+    }
 
     try {
       const res = await fetch(`${API_BASE}/api/chats/recent`, {
@@ -142,29 +161,41 @@ document.addEventListener("DOMContentLoaded", () => {
         headers: authHeaders(),
       });
 
-      if (!res.ok) {
-        // 토큰 만료 등
+      // ✅ 401이면 토큰 만료/무효 → 토큰 삭제 + 로그인 버튼 유지
+      if (res.status === 401) {
+        localStorage.removeItem("token");
+        authConfirmed = false;
+        renderAuthUI();
         return;
       }
 
-      const rooms = await res.json(); // 배열
-      rooms.forEach((room) => {
-        myChatList.appendChild(createChatItem(room));
-      });
+      if (!res.ok) {
+        // 다른 에러면 로그인 확인 실패로 처리(버튼 보이게 유지)
+        authConfirmed = false;
+        renderAuthUI();
+        return;
+      }
+
+      // ✅ 200 OK면 로그인 확인 완료 → 버튼 숨김
+      authConfirmed = true;
+      renderAuthUI();
+
+      const rooms = await res.json();
+      rooms.forEach((room) => myChatList.appendChild(createChatItem(room)));
     } catch (err) {
       console.error(err);
+      // 네트워크 에러도 로그인 확인 실패로 처리
+      authConfirmed = false;
+      renderAuthUI();
     }
   }
 
   // ====== 새 채팅 버튼 ======
-  newChatBtn?.addEventListener("click", async () => {
-    // 그냥 새 대화 시작(입력 없이) 원하는 경우가 있을 수 있으니
-    // 여기서는 index에서 메시지 먼저 입력하게 두고, 클릭 시 입력창 포커스만
+  newChatBtn?.addEventListener("click", () => {
     input?.focus();
   });
 
   // ====== index에서 첫 질문 보내면 새 채팅 생성 후 chat.html로 이동 ======
-
   async function startChat(firstMessage) {
     const res = await fetch(`${API_BASE}/api/chats/start`, {
       method: "POST",
@@ -173,9 +204,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     const dataOrText = await res.text();
+
+    // 토큰 만료면 처리
+    if (res.status === 401) {
+      localStorage.removeItem("token");
+      authConfirmed = false;
+      renderAuthUI();
+      throw new Error("로그인이 만료되었습니다. 다시 로그인해주세요.");
+    }
+
     if (!res.ok) throw new Error(dataOrText);
 
-    // text가 JSON일 것
     let data;
     try {
       data = JSON.parse(dataOrText);
@@ -200,12 +239,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       const chatId = await startChat(msg);
-      // chat.html로 이동하면서 chatId 전달
       window.location.href = `./pages/chat.html?chatId=${encodeURIComponent(chatId)}`;
     } catch (err) {
       console.error(err);
       alert("채팅 시작 실패: " + (err?.message || err));
       updateSendState();
+      renderAuthUI();
     }
   }
 
@@ -217,6 +256,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 초기 로드
-  loadRecentChats();
+  // ✅ 초기 로드
+  renderAuthUI();     // 일단 보여주고
+  loadRecentChats();  // 서버 확인 후 숨길지 결정
 });
