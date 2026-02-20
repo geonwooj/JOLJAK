@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
@@ -11,11 +11,12 @@
       <aside class="side">
         <div class="side__spacer"></div>
 
-        <nav class="side__content">
-          <a class="side-item" href="./pages/chat.html">
-            <span class="side-item__icon">💬</span>
-            <span class="side-item__text">AI Patnet Office 사용 방법</span>
-          </a>
+        <nav class="side__content" id="sideContent">
+          <!-- ✅ 최근 채팅 5개 (JS로 채움) -->
+          <div class="side-section">
+            <div class="side-section__title">내 채팅</div>
+            <div id="myChatList" class="side-section__list"></div>
+          </div>
         </nav>
 
         <div class="side__footer">데모 버전</div>
@@ -56,7 +57,7 @@
             </h1>
           </div>
 
-          <button class="btn" id="btnLogin" type="button">
+          <button class="btn-primary" id="btnLogin" type="button">
             <!-- user -->
             <svg viewBox="0 0 24 24" fill="none">
               <path
@@ -98,7 +99,7 @@
             <h2>AI Patent Office에 오신 것을 환영합니다</h2>
             <p>
               특허 검색, 선행기술 조사, 특허성 분석 등 다양한 특허 관련 업무를
-              AI로 도와드립니다
+              도와드립니다.
             </p>
 
             <div class="grid">

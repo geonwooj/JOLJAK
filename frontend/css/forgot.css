@@ -1,0 +1,142 @@
+/* 전체 중앙 정렬 */
+.fp-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: white;
+  position: relative;
+}
+
+/* 카드 */
+.fp-card {
+  width: 448px;
+  text-align: center;
+}
+
+/* 뒤로가기 */
+.fp-back {
+  position: absolute;
+  top: 40px;
+  left: 60px;
+  color: #4a5565;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+/* 로고 */
+.fp-logo {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--p), var(--q));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: white;
+}
+
+/* 제목 */
+.fp-title {
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+
+/* 설명 */
+.fp-desc {
+  color: var(--m);
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+/* 입력 필드 */
+.fp-field {
+  text-align: left;
+  margin-bottom: 16px;
+}
+
+.fp-field label {
+  font-size: 14px;
+  display: block;
+  margin-bottom: 6px;
+  color: #364153;
+}
+
+.fp-field input {
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: none;
+  background: #f3f3f5;
+}
+
+/* 메인 버튼 */
+.fp-primary-btn {
+  width: 100%;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  background: #030213;
+  color: white;
+  cursor: pointer;
+  margin-bottom: 24px;
+  transition: 0.2s;
+}
+
+.fp-primary-btn:hover {
+  background: #000;
+}
+
+/* 구분선 */
+.fp-divider {
+  position: relative;
+  margin: 24px 0;
+  font-size: 14px;
+  color: var(--m);
+}
+
+.fp-divider::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  border-top: 1px solid var(--b);
+  z-index: -1;
+}
+
+.fp-divider span {
+  background: white;
+  padding: 0 10px;
+}
+
+/* 보조 버튼 */
+.fp-secondary-btn {
+  width: 100%;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--b2);
+  background: white;
+  cursor: pointer;
+  margin-bottom: 24px;
+}
+
+.fp-secondary-btn:hover {
+  background: #f9fafb;
+}
+
+/* 회원가입 */
+.fp-signup {
+  font-size: 14px;
+  color: #4a5565;
+}
+
+.fp-signup a {
+  color: #155dfc;
+  text-decoration: none;
+  font-weight: 500;
+}

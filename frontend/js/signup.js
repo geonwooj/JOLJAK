@@ -1,13 +1,24 @@
 const form = document.querySelector(".login-form");
-const inputs = document.querySelectorAll(".login-form .input");
 
+const nameInput = document.getElementById("nameInput");
 const emailInput = document.getElementById("emailInput");
+
 const sendCodeBtn = document.getElementById("sendCodeBtn");
 const verifyBox = document.getElementById("verifyBox");
 const codeInput = document.getElementById("codeInput");
 const verifyCodeBtn = document.getElementById("verifyCodeBtn");
 const verifyStatus = document.getElementById("verifyStatus");
-const signupBtn = document.getElementById("signupBtn");
+
+const passwordInput = document.getElementById("passwordInput");
+const passwordConfirmInput = document.getElementById("passwordConfirmInput");
+
+const pwHint = document.getElementById("pwHint");
+const pwMatchHint = document.getElementById("pwMatchHint");
+
+const termsCheck = document.getElementById("termsCheck");
+
+// ✅ 대문자 필수 없음: 8자 이상 + 영문 + 숫자 + 특수문자
+const PASSWORD_POLICY = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 
 let emailVerified = false;
 let verifiedEmail = "";
@@ -20,20 +31,42 @@ function setVerifyStatus(msg, ok = false) {
 function resetVerificationUI() {
   emailVerified = false;
   verifiedEmail = "";
-  signupBtn.disabled = true;
   verifyBox.style.display = "none";
   codeInput.value = "";
-  setVerifyStatus("", false);
+  setVerifyStatus("");
 }
 
-// ✅ 이메일이 변경되면 인증 무효화
+function updatePasswordHints() {
+  const pw = (passwordInput.value || "").trim();
+  const pw2 = (passwordConfirmInput.value || "").trim();
+
+  // 비밀번호 정책 힌트
+  if (!pw) {
+    pwHint.style.display = "none";
+  } else {
+    pwHint.style.display = PASSWORD_POLICY.test(pw) ? "none" : "block";
+  }
+
+  // 비밀번호 확인 일치 힌트
+  if (!pw2) {
+    pwMatchHint.style.display = "none";
+  } else {
+    pwMatchHint.style.display = (pw && pw === pw2) ? "none" : "block";
+  }
+}
+
+// ===== 실시간 힌트 =====
+passwordInput.addEventListener("input", updatePasswordHints);
+passwordConfirmInput.addEventListener("input", updatePasswordHints);
+
+// 이메일 변경 시 인증 무효
 emailInput.addEventListener("input", () => {
   resetVerificationUI();
 });
 
+// ===== 이메일 인증 =====
 sendCodeBtn.addEventListener("click", async () => {
   const email = emailInput.value.trim();
-
   if (!email) {
     await CustomModal.alert("이메일을 입력해주세요.");
     return;
@@ -47,7 +80,6 @@ sendCodeBtn.addEventListener("click", async () => {
     });
 
     const text = await res.text();
-
     if (!res.ok) {
       await CustomModal.alert("인증코드 전송 실패: " + text);
       return;
@@ -83,7 +115,6 @@ verifyCodeBtn.addEventListener("click", async () => {
     });
 
     const text = await res.text();
-
     if (!res.ok) {
       setVerifyStatus(text, false);
       await CustomModal.alert("인증 실패: " + text);
@@ -92,8 +123,6 @@ verifyCodeBtn.addEventListener("click", async () => {
 
     emailVerified = true;
     verifiedEmail = email;
-    signupBtn.disabled = false;
-
     setVerifyStatus("이메일 인증 완료 ✅", true);
     await CustomModal.alert(text);
   } catch (err) {
@@ -102,16 +131,32 @@ verifyCodeBtn.addEventListener("click", async () => {
   }
 });
 
+// ===== 회원가입 =====
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const name = document.getElementById("nameInput").value.trim();       // 닉네임 input에 id 부여 필요
-  const email = document.getElementById("emailInput").value.trim();
-  const password = document.getElementById("passwordInput").value.trim(); // 비번 input에 id 부여 필요
-  const passwordConfirm = document.getElementById("passwordConfirmInput").value.trim(); // 확인 input id
+  const name = nameInput.value.trim();
+  const email = emailInput.value.trim();
+  const password = passwordInput.value.trim();
+  const passwordConfirm = passwordConfirmInput.value.trim();
 
+  // 기본 입력 체크
   if (!name || !email || !password || !passwordConfirm) {
     await CustomModal.alert("모든 필드를 입력해주세요.");
+    return;
+  }
+
+  // 이메일 인증 체크
+  if (!emailVerified || verifiedEmail !== email) {
+    await CustomModal.alert("이메일 인증을 완료해주세요.");
+    return;
+  }
+
+  // 비밀번호 정책 체크 (✅ 여기서만 모달 띄우고, 힌트는 입력창 아래 빨간 글씨)
+  updatePasswordHints();
+  if (!PASSWORD_POLICY.test(password)) {
+    // 힌트가 보이게만 하고, 모달은 짧게
+    await CustomModal.alert("비밀번호 형식이 올바르지 않습니다.");
     return;
   }
 
@@ -120,8 +165,9 @@ form.addEventListener("submit", async (e) => {
     return;
   }
 
-  if (!emailVerified || verifiedEmail !== email) {
-    await CustomModal.alert("이메일 인증을 완료해주세요.");
+  // ✅ 약관 체크는 “버튼 눌렀을 때”만 안내
+  if (!termsCheck.checked) {
+    await CustomModal.alert("이용약관 및 개인정보처리방침에 동의해주세요.");
     return;
   }
 
@@ -129,17 +175,23 @@ form.addEventListener("submit", async (e) => {
     const response = await fetch("http://127.0.0.1:8080/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({
+        name,
+        email,
+        password,
+        termsAccepted: true,
+      }),
     });
 
     const resultText = await response.text();
 
     if (!response.ok) {
+      // ✅ 여기 문장이 진짜 원인(만료/중복 등)
       await CustomModal.alert("회원가입 실패: " + resultText);
       return;
     }
 
-    await CustomModal.alert("회원가입 성공: " + resultText);
+    await CustomModal.alert("회원가입 성공!");
     window.location.href = "./login.html";
   } catch (err) {
     console.error(err);
