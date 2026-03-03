@@ -13,7 +13,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const app = document.getElementById("app");
   const btnMenu = document.getElementById("btnMenu");
-  btnMenu?.addEventListener("click", () => app.classList.toggle("is-collapsed"));
+  btnMenu?.addEventListener("click", () =>
+    app.classList.toggle("is-collapsed"),
+  );
 
   function getToken() {
     return localStorage.getItem("token") || "";
@@ -25,25 +27,39 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderAuthUI() {
     if (!btnLogin) return;
 
-    // 기본: 무조건 로그인 버튼 보이게(초기 깜빡임/none 박힘 방지)
-    btnLogin.style.removeProperty("display");
-    btnLogin.style.display = "inline-flex";
-
-    // 서버 확인 완료면 숨김
-    if (authConfirmed) {
-      btnLogin.style.display = "none";
-    }
-
-    // (선택) 유저이름 표시
     const userName = localStorage.getItem("userName");
-    const userNameEl = document.getElementById("userNameText");
-    if (userNameEl) userNameEl.textContent = authConfirmed && userName ? userName : "";
+
+    if (authConfirmed && userName) {
+      btnLogin.style.display = "inline-flex";
+      btnLogin.innerHTML = `${userName}님, 환영합니다.`;
+      btnLogin.onclick = () => {
+        window.location.href = "./pages/profile.html";
+      };
+    } else {
+      btnLogin.style.display = "inline-flex";
+      btnLogin.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"
+          stroke="currentColor" stroke-width="1.8"/>
+        <path d="M4 20a8 8 0 0 1 16 0"
+          stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round"/>
+      </svg>
+      로그인 하세요
+    `;
+      btnLogin.onclick = () => {
+        window.location.href = "./pages/login.html";
+      };
+    }
   }
 
   function authHeaders() {
     const token = getToken();
     if (!token) return { "Content-Type": "application/json" };
-    return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+    return {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    };
   }
 
   function updateSendState() {
@@ -57,7 +73,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // ====== 채팅 목록 UI: 렌더 + 삭제 메뉴 ======
 
   function closeAllDropdowns() {
-    document.querySelectorAll(".chat-item.is-open").forEach((el) => el.classList.remove("is-open"));
+    document
+      .querySelectorAll(".chat-item.is-open")
+      .forEach((el) => el.classList.remove("is-open"));
   }
 
   document.addEventListener("click", (e) => {
@@ -129,10 +147,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function deleteChatRoom(chatId) {
     try {
-      const res = await fetch(`${API_BASE}/api/chats/${encodeURIComponent(chatId)}`, {
-        method: "DELETE",
-        headers: authHeaders(),
-      });
+      const res = await fetch(
+        `${API_BASE}/api/chats/${encodeURIComponent(chatId)}`,
+        {
+          method: "DELETE",
+          headers: authHeaders(),
+        },
+      );
 
       const text = await res.text();
       if (!res.ok) alert("삭제 실패: " + text);
@@ -257,6 +278,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ✅ 초기 로드
-  renderAuthUI();     // 일단 보여주고
-  loadRecentChats();  // 서버 확인 후 숨길지 결정
+  renderAuthUI(); // 일단 보여주고
+  loadRecentChats(); // 서버 확인 후 숨길지 결정
 });

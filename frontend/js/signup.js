@@ -51,7 +51,7 @@ function updatePasswordHints() {
   if (!pw2) {
     pwMatchHint.style.display = "none";
   } else {
-    pwMatchHint.style.display = (pw && pw === pw2) ? "none" : "block";
+    pwMatchHint.style.display = pw && pw === pw2 ? "none" : "block";
   }
 }
 
@@ -123,7 +123,7 @@ verifyCodeBtn.addEventListener("click", async () => {
 
     emailVerified = true;
     verifiedEmail = email;
-    setVerifyStatus("이메일 인증 완료 ✅", true);
+    setVerifyStatus("이메일 인증 완료", true);
     await CustomModal.alert(text);
   } catch (err) {
     console.error(err);
@@ -142,7 +142,7 @@ form.addEventListener("submit", async (e) => {
 
   // 기본 입력 체크
   if (!name || !email || !password || !passwordConfirm) {
-    await CustomModal.alert("모든 필드를 입력해주세요.");
+    await CustomModal.alert("모든 항목을 입력해주세요.");
     return;
   }
 
@@ -162,12 +162,6 @@ form.addEventListener("submit", async (e) => {
 
   if (password !== passwordConfirm) {
     await CustomModal.alert("비밀번호가 일치하지 않습니다.");
-    return;
-  }
-
-  // ✅ 약관 체크는 “버튼 눌렀을 때”만 안내
-  if (!termsCheck.checked) {
-    await CustomModal.alert("이용약관 및 개인정보처리방침에 동의해주세요.");
     return;
   }
 
