@@ -156,10 +156,10 @@ document.addEventListener("DOMContentLoaded", () => {
       );
 
       const text = await res.text();
-      if (!res.ok) alert("삭제 실패: " + text);
+      if (!res.ok) await CustomModal.alert("삭제 실패: " + text);
     } catch (err) {
       console.error(err);
-      alert("서버 연결 실패");
+      await CustomModal.alert("서버 연결 실패");
     }
   }
 
@@ -252,7 +252,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const token = getToken();
     if (!token) {
-      alert("로그인이 필요합니다.");
+      await CustomModal.alert("로그인이 필요합니다.");
       return;
     }
 
@@ -263,7 +263,7 @@ document.addEventListener("DOMContentLoaded", () => {
       window.location.href = `./pages/chat.html?chatId=${encodeURIComponent(chatId)}`;
     } catch (err) {
       console.error(err);
-      alert("채팅 시작 실패: " + (err?.message || err));
+      await CustomModal.alert("채팅 시작 실패: " + (err?.message || err));
       updateSendState();
       renderAuthUI();
     }
