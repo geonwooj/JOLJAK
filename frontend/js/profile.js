@@ -69,7 +69,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   btnDelete?.addEventListener("click", async () => {
     const ok = await CustomModal.confirm(
-      "정말 계정을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.",
+      "정말 계정을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다."
     );
 
     if (!ok) return;
@@ -84,8 +84,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         },
       });
 
+      const message = await res.text();
+
+      console.log("삭제 status =", res.status);
+      console.log("삭제 response =", message);
+
       if (!res.ok) {
-        await CustomModal.alert("계정 삭제에 실패했습니다.");
+        await CustomModal.alert(message || "계정 삭제에 실패했습니다.");
         return;
       }
 
@@ -93,9 +98,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       localStorage.removeItem("userName");
 
       await CustomModal.alert("계정이 삭제되었습니다.");
-      window.location.href = "./login.html";
+      window.location.href = "../index.html";
     } catch (err) {
-      console.error(err);
+      console.error("삭제 요청 실패:", err);
       await CustomModal.alert("서버 오류가 발생했습니다.");
     }
   });
