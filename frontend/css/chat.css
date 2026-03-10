@@ -156,3 +156,8 @@ body {
 .msg--user {
   flex-direction: row-reverse;
 }
+
+#chatWrap {
+  overflow-y: auto;
+  height: 100%;
+}

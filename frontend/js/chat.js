@@ -101,7 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
       e.stopPropagation();
       closeAllDropdowns();
 
-      const ok = confirm("이 채팅을 삭제할까요?");
+      const ok = await CustomModal.confirm("이 채팅을 삭제할까요?");
       if (!ok) return;
 
       await deleteChatRoom(id);
@@ -126,10 +126,10 @@ document.addEventListener("DOMContentLoaded", () => {
         },
       );
       const text = await res.text();
-      if (!res.ok) alert("삭제 실패: " + text);
+      if (!res.ok) await CustomModal.alert("삭제 실패: " + text);
     } catch (err) {
       console.error(err);
-      alert("서버 연결 실패");
+      await CustomModal.alert("서버 연결 실패");
     }
   }
 
@@ -174,7 +174,12 @@ document.addEventListener("DOMContentLoaded", () => {
   `;
 
     chatWrap.appendChild(item);
-    chatWrap.scrollTop = chatWrap.scrollHeight;
+
+    // 마지막 메시지로 스크롤
+    item.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
   }
 
   function clearMessages() {
@@ -195,7 +200,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const text = await res.text();
       if (!res.ok) {
-        alert("메시지 로드 실패: " + text);
+        await CustomModal.alert("메시지 로드 실패: " + text);
         return;
       }
 
@@ -203,7 +208,7 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         messages = JSON.parse(text);
       } catch {
-        alert("메시지 응답이 JSON이 아닙니다: " + text);
+        await CustomModal.alert("메시지 응답이 JSON이 아닙니다: " + text);
         return;
       }
 
@@ -214,9 +219,15 @@ document.addEventListener("DOMContentLoaded", () => {
         const content = m.content ?? m.message ?? "";
         renderMessage(role, content);
       });
+      setTimeout(() => {
+        const last = chatWrap.lastElementChild;
+        if (last) {
+          last.scrollIntoView({ behavior: "auto", block: "end" });
+        }
+      }, 0);
     } catch (err) {
       console.error(err);
-      alert("서버 연결 실패");
+      await CustomModal.alert("서버 연결 실패");
     }
   }
 
@@ -226,14 +237,21 @@ document.addEventListener("DOMContentLoaded", () => {
     const msg = (input?.value || "").trim();
     if (!msg) return;
 
+    renderMessage("USER", msg);
+
+    input.value = "";
+    updateSendState();
+
     const token = getToken();
     if (!token) {
-      alert("로그인이 필요합니다.");
+      await CustomModal.alert("로그인이 필요합니다.");
       return;
     }
 
     if (!chatId) {
-      alert("채팅방 ID가 없습니다. index에서 새로 시작하세요.");
+      await CustomModal.alert(
+        "채팅방 ID가 없습니다. index에서 새로 시작하세요.",
+      );
       return;
     }
 
@@ -251,7 +269,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const text = await res.text();
       if (!res.ok) {
-        alert("전송 실패: " + text);
+        await CustomModal.alert("전송 실패: " + text);
         updateSendState();
         return;
       }
@@ -260,27 +278,23 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         messages = JSON.parse(text);
       } catch {
-        alert("전송 응답이 JSON이 아닙니다: " + text);
+        await CustomModal.alert("전송 응답이 JSON이 아닙니다: " + text);
         updateSendState();
         return;
       }
 
-      input.value = "";
-      updateSendState();
-
       // 서버에서 전체 메시지를 내려주는 방식이라면 통째로 다시 렌더
-      clearMessages();
-      messages.forEach((m) => {
-        const role = m.role;
-        const content = m.content ?? m.message ?? "";
-        renderMessage(role, content);
-      });
+      const lastMessage = messages[messages.length - 1];
+      const role = lastMessage.role;
+      const content = lastMessage.content ?? lastMessage.message ?? "";
+
+      renderMessage(role, content);
 
       // 최근 채팅 목록 갱신
       await loadRecentChats();
     } catch (err) {
       console.error(err);
-      alert("서버 연결 실패");
+      await CustomModal.alert("서버 연결 실패");
       updateSendState();
     }
   }
