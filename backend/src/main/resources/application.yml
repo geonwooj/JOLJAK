@@ -33,7 +33,7 @@ spring:
 
 app:
   mail:
-    from: joljak5114@gmail.com
+    from: "AI Patent Office <joljak5114@gmail.com>"
   email-verification:
     expiry-minutes: 5
 
