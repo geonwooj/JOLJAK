@@ -473,3 +473,41 @@ svg {
   font-size: 13px;
   font-weight: 500;
 }
+
+.file-bubble {
+  background: #f3f4f6;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.drag-over {
+  border: 2px dashed #6366f1;
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.drag-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.4);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.drag-overlay.show {
+  display: flex;
+}
+
+.drag-overlay__content {
+  border: 3px dashed #6366f1;
+  padding: 40px 60px;
+  border-radius: 16px;
+  background: white;
+  font-size: 20px;
+  font-weight: 600;
+}

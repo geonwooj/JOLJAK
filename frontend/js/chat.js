@@ -9,6 +9,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const app = document.getElementById("app");
   const btnMenu = document.getElementById("btnMenu");
+  const btnLogin = document.getElementById("btnLogin");
+  const btnFile = document.getElementById("btnFile");
+  const fileInput = document.getElementById("fileInput");
+  const dragOverlay = document.getElementById("dragOverlay");
+
   btnMenu?.addEventListener("click", () =>
     app.classList.toggle("is-collapsed"),
   );
@@ -37,6 +42,35 @@ document.addEventListener("DOMContentLoaded", () => {
   input?.addEventListener("input", updateSendState);
   updateSendState();
 
+  function renderAuthUI() {
+    if (!btnLogin) return;
+
+    const userName = localStorage.getItem("userName");
+
+    if (userName) {
+      btnLogin.style.display = "inline-flex";
+      btnLogin.innerHTML = `${userName}님, 환영합니다.`;
+      btnLogin.onclick = () => {
+        window.location.href = "./profile.html";
+      };
+    } else {
+      btnLogin.style.display = "inline-flex";
+      btnLogin.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"
+          stroke="currentColor" stroke-width="1.8"/>
+        <path d="M4 20a8 8 0 0 1 16 0"
+          stroke="currentColor" stroke-width="1.8"
+          stroke-linecap="round"/>
+      </svg>
+      로그인 하세요
+    `;
+      btnLogin.onclick = () => {
+        window.location.href = "./login.html";
+      };
+    }
+  }
+
   // ====== 채팅 목록 UI: 렌더 + 삭제 메뉴(메인과 동일) ======
 
   function closeAllDropdowns() {
@@ -58,6 +92,8 @@ document.addEventListener("DOMContentLoaded", () => {
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#039;");
   }
+
+  let authConfirmed = false;
 
   function createChatItem(room) {
     const id = room.chatId ?? room.id;
@@ -156,6 +192,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ====== chat.html: 메시지 렌더 ======
 
+  async function typeText(element, text, speed = 20) {
+    element.textContent = "";
+
+    for (let i = 0; i < text.length; i++) {
+      element.textContent += text[i];
+      await new Promise((resolve) => setTimeout(resolve, speed));
+    }
+  }
+
   function renderMessage(role, text) {
     if (!chatWrap) return;
 
@@ -169,11 +214,19 @@ document.addEventListener("DOMContentLoaded", () => {
       ${isUser ? "Q" : "A"}
     </div>
     <div class="msg__bubble ${!isUser ? "msg__bubble--a" : ""}">
-      <div class="msg__text">${text ?? ""}</div>
+      <div class="msg__text"></div>
     </div>
   `;
 
     chatWrap.appendChild(item);
+
+    const textEl = item.querySelector(".msg__text");
+
+    if (isUser) {
+      textEl.textContent = text;
+    } else {
+      typeText(textEl, text); // AI 답변만 타이핑 효과
+    }
 
     // 마지막 메시지로 스크롤
     item.scrollIntoView({
@@ -313,7 +366,136 @@ document.addEventListener("DOMContentLoaded", () => {
     window.location.href = "../index.html";
   });
 
+  let dragCounter = 0;
+
+  app?.addEventListener("dragenter", (e) => {
+    e.preventDefault();
+    dragCounter++;
+    dragOverlay.classList.add("show");
+  });
+
+  app?.addEventListener("dragleave", (e) => {
+    dragCounter--;
+    if (dragCounter === 0) {
+      dragOverlay.classList.remove("show");
+    }
+  });
+
+  app?.addEventListener("dragover", (e) => {
+    e.preventDefault();
+  });
+
+  app?.addEventListener("drop", async (e) => {
+    e.preventDefault();
+    dragCounter = 0;
+    dragOverlay.classList.remove("show");
+
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+
+    uploadFile(file);
+  });
+  function renderFileMessage(role, fileName) {
+    if (!chatWrap) return;
+
+    const isUser = role === "USER";
+
+    const item = document.createElement("div");
+    item.className = isUser ? "msg msg--user" : "msg";
+
+    item.innerHTML = `
+    <div class="msg__avatar ${isUser ? "msg__avatar--q" : "msg__avatar--a"}">
+      ${isUser ? "Q" : "A"}
+    </div>
+    <div class="msg__bubble file-bubble">
+      📎 ${fileName}
+    </div>
+  `;
+
+    chatWrap.appendChild(item);
+
+    item.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
+  }
+
+  fileInput?.addEventListener("change", async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const token = getToken();
+
+    if (!token) {
+      await CustomModal.alert("로그인이 필요합니다.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/files/upload`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const text = await res.text();
+
+      if (!res.ok) {
+        await CustomModal.alert("파일 업로드 실패: " + text);
+        return;
+      }
+
+      // 채팅창에 파일 표시
+      renderFileMessage("USER", file.name);
+    } catch (err) {
+      console.error(err);
+      await CustomModal.alert("서버 연결 실패");
+    }
+
+    fileInput.value = "";
+  });
+
+  async function uploadFile(file) {
+    const token = getToken();
+
+    if (!token) {
+      await CustomModal.alert("로그인이 필요합니다.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/files/upload`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const text = await res.text();
+
+      if (!res.ok) {
+        await CustomModal.alert("파일 업로드 실패: " + text);
+        return;
+      }
+
+      renderFileMessage("USER", file.name);
+    } catch (err) {
+      console.error(err);
+      await CustomModal.alert("서버 연결 실패");
+    }
+  }
+
   // 초기 실행
+  renderAuthUI();
   loadRecentChats();
   loadMessages();
 });
