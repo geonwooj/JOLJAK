@@ -1,49 +1,38 @@
 from pathlib import Path
 import json
 from typing import List, Dict, Any
-import random
 
+# 기존 경로 설정 유지 (하위 호환성)
 BASE_PATH = Path(__file__).resolve().parent.parent / "fewshots"
 
 def load_claim_generation_examples(
-    subcategory: str = "fitness",
-    max_per_file: int = 5,          # 파일당 최대 예제 수
-    max_total: int = 15             # 전체 최대 예제 수
+    subcategory: str = "fitness",   # 기존 인자 유지 (에러 방지)
+    max_per_file: int = 5,          # 기존 인자 유지 (에러 방지)
+    max_total: int = 3,             # 실제 사용할 예제 수
+    prior_arts: List[Dict[str, Any]] = None  # 신규 추가: 검색 결과
 ) -> List[Dict[str, Any]]:
     """
-    ai/fewshots/{subcategory} 폴더 안의 모든 .json 파일을 읽어 예제 리스트 반환
-    - fitness → ai/fewshots/fitness/*.json 전체 로드
+    [Dynamic Few-Shot] 검색된 유사 특허(prior_arts)를 
+    GPT가 학습할 수 있는 예제 리스트 형태로 변환합니다.
     """
-    folder_path = BASE_PATH / subcategory
     
-    print(f"[fewshot_loader] 대상 폴더: {folder_path.absolute()}")
-    
-    if not folder_path.exists() or not folder_path.is_dir():
-        print(f"[fewshot_loader] 폴더 없음 또는 디렉토리 아님: {folder_path}")
-        print("해결: ai/fewshots/fitness/ 폴더를 만들고 JSON 파일을 넣어주세요")
+    # 1. 만약 검색 결과(prior_arts)가 들어오지 않았다면 빈 리스트 반환
+    if not prior_arts:
+        print(f"[fewshot_loader] 참고할 검색 결과가 없습니다. (요청 분야: {subcategory})")
         return []
-    
+
     all_examples = []
     
-    # 폴더 안 모든 .json 파일 순회
-    for json_file in folder_path.glob("*.json"):
-        print(f"  → 읽는 파일: {json_file.name}")
-        try:
-            with open(json_file, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                # 단일 객체이면 리스트로 변환
-                if isinstance(data, dict):
-                    data = [data]
-                all_examples.extend(data[:max_per_file])
-        except Exception as e:
-            print(f"  → 파일 오류 ({json_file.name}): {e}")
-    
-    # 전체 예제 수 제한 (랜덤 섞기)
-    if len(all_examples) > max_total:
-        random.shuffle(all_examples)
-        all_examples = all_examples[:max_total]
-    
+    # 2. 검색 결과(prior_arts)를 순회하며 예제 형식으로 재구성
+    # 리스트 슬라이싱을 통해 max_total만큼만 추출
+    for art in prior_arts[:max_total]:
+        example = {
+            "abstract": art.get("abstract", ""),
+            "claims": art.get("claims", "")
+        }
+        all_examples.append(example)
+
     total = len(all_examples)
-    print(f"[fewshot_loader] 총 {total}개 예제 로드 완료 ({subcategory} 폴더)")
+    print(f"[fewshot_loader] 총 {total}개의 유사 특허를 Dynamic Few-Shot 예제로 구성 완료")
     
     return all_examples

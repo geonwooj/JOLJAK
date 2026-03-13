@@ -1,6 +1,3 @@
-# ai/prompts/claim_gen.py
-# ai/prompts/claim_gen.py
-
 import json
 from aimodule.utils.fewshot_loader import load_claim_generation_examples
 from aimodule.config.prompt_config import DEFAULT_FIELD, DEFAULT_N_SHOTS, USE_FEW_SHOT
@@ -24,36 +21,37 @@ SYSTEM = """
 }
 """
 
-def build_fewshot_part(field: str, n_shots: int) -> str:
-    """few-shot 파츠 생성 (기존 유지)"""
-    if not USE_FEW_SHOT:
+def build_fewshot_part(prior_arts: list, n_shots: int) -> str:
+    """
+    [핵심 수정] 기존 파일 로드 방식에서 검색 결과(prior_arts) 기반 동적 생성으로 변경
+    """
+    if not USE_FEW_SHOT or not prior_arts:
         return ""
-    examples = load_claim_generation_examples(field, max_per_file=n_shots)
-    fewshot_text = ""
+    
+    # 수정된 fewshot_loader 호출 (검색 결과를 전달)
+    examples = load_claim_generation_examples(prior_arts=prior_arts, max_total=n_shots)
+    
+    fewshot_text = "### [학습용 청구항 작성 예시 (Dynamic Few-Shot)] ###\n"
     for ex in examples:
-        fewshot_text += f"""[예시 입력]
-발명 개요: {ex.get('user_idea', '')}
-차별 요소: {json.dumps(ex.get('diff', {}), ensure_ascii=False)}
+        fewshot_text += f"""[참고 선행 특허 요약]
+{ex.get('abstract', '')[:300]}...
 
-[참고 선행 청구항]
-{ex.get('prior_claims', '')}
-
-[모범 출력]
-{json.dumps(ex.get('output', {}), ensure_ascii=False, indent=2)}
+[참고 선행 청구항 구조]
+{ex.get('claims', '')[:600]}...
 
 ────────────────────────\n"""
     return fewshot_text
 
 def build_prior_arts_context(prior_arts: list) -> str:
-    """[연구 기믹] 검색된 다수 선행 특허 정보를 프롬프트에 삽입"""
+    """검색된 선행 특허 정보를 분석 컨텍스트로 삽입"""
     if not prior_arts:
         return ""
     
     context = "[검색된 관련 선행 특허군 (Prior Arts Analysis)]\n"
-    for i, art in enumerate(prior_arts, 1):
+    # 예제로 쓰인 것 외에 분석용으로 더 넓은 범위를 제공 (최대 5건)
+    for i, art in enumerate(prior_arts[:5], 1):
         title = art.get('file', f'Patent_{i}').replace('.pdf', '')
         abstract = art.get('abstract', '요약 정보 없음')
-        # 청구항은 핵심 텍스트 위주로 전달 (토큰 절약 및 노이즈 제거)
         claims = art.get('claims', '청구항 정보 없음')[:300]
         
         context += f"<{i}. {title}>\n"
@@ -67,30 +65,33 @@ def build_diff_part(diff_elements: dict, user_idea: str) -> str:
     return f"[사용자 발명 아이디어]\n{user_idea}\n\n[선행 특허와의 핵심 차별점]\n{user_only}\n"
 
 def build_instruction_part() -> str:
-    """지시 파츠 (연구 의도 강화)"""
+    """지시 파츠"""
     return """[최종 지시]
-1. 위 '선행 특허군'의 기술 구성과 중복되지 않도록 주의하라.
-2. '핵심 차별점'에 명시된 구성요소를 독립항(제1항)의 필수 구성으로 포함하라.
-3. 법적 효력이 있는 한국 특허 청구항 양식(제n항에 있어서, ~을 특징으로 하는 등)을 준수하라.
+1. 위 '학습용 청구항 작성 예시'의 문체와 '선행 특허군'의 권리범위를 분석하라.
+2. 분석 결과와 중복되지 않도록 '핵심 차별점'을 제1항(독립항)의 필수 구성으로 포함하라.
+3. 법적 효력이 있는 한국 특허 청구항 양식(제1항에 있어서, ~을 특징으로 하는 등)을 준수하라.
 """
 
 def get_claim_gen_prompt(
-    elements: dict,           # 기준 특허 (호환성 유지)
-    diff_elements: dict,      # 차이점 분석 결과
-    user_idea: str = "",      # 사용자 입력 아이디어
-    prior_arts: list = None,  # [추가] 검색된 다수 선행 특허 리스트
+    elements: dict,           
+    diff_elements: dict,      
+    user_idea: str = "",      
+    prior_arts: list = None,  
     field: str = DEFAULT_FIELD,
     n_shots: int = DEFAULT_N_SHOTS,
     temperature: float = 0.3
 ) -> tuple[str, str]:
     """
-    Retrieval-Guided 청구항 생성 프롬프트 조립
+    Dynamic Few-Shot이 적용된 청구항 생성 프롬프트 조립
     """
-    # 다수 문헌 검색 결과가 있으면 그것을 우선 사용
+    # 1. 검색된 특허를 '학습 예시'로 변환 (Dynamic Few-Shot)
+    fewshot_part = build_fewshot_part(prior_arts, n_shots)
+    
+    # 2. 검색된 특허를 '비교 분석 컨텍스트'로 삽입
     prior_context = build_prior_arts_context(prior_arts) if prior_arts else ""
     
     parts = [
-        build_fewshot_part(field, n_shots),
+        fewshot_part,
         prior_context,
         build_diff_part(diff_elements, user_idea),
         build_instruction_part()
