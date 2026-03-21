@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const chatWrap = document.getElementById("chatWrap");
   const myChatList = document.getElementById("myChatList");
   const newChatBtn = document.getElementById("newChatBtn");
+  const btnLogin = document.getElementById("btnLogin");
 
   const app = document.getElementById("app");
   const btnMenu = document.getElementById("btnMenu");
@@ -18,6 +19,43 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function getToken() {
     return localStorage.getItem("token") || "";
+  }
+
+  let authConfirmed = false;
+
+  function renderAuthUI() {
+    if (!btnLogin) return;
+
+    const userName = localStorage.getItem("userName");
+
+    if (authConfirmed && userName) {
+      btnLogin.style.display = "inline-flex";
+      btnLogin.innerHTML = `${userName}님, 환영합니다.`;
+      btnLogin.onclick = () => {
+        window.location.href = "./profile.html";
+      };
+    } else {
+      btnLogin.style.display = "inline-flex";
+      btnLogin.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"
+          stroke="currentColor"
+          stroke-width="1.8"
+        />
+        <path
+          d="M4 20a8 8 0 0 1 16 0"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+        />
+      </svg>
+      로그인 하세요
+    `;
+      btnLogin.onclick = () => {
+        window.location.href = "./login.html";
+      };
+    }
   }
 
   function authHeaders() {
@@ -68,22 +106,22 @@ document.addEventListener("DOMContentLoaded", () => {
     wrapper.dataset.chatId = String(id);
 
     wrapper.innerHTML = `
-      <a class="side-item" href="./chat.html?chatId=${encodeURIComponent(id)}">
-        <span class="side-item__icon">
-          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M5 6.5C5 5.12 6.12 4 7.5 4h9C17.88 4 19 5.12 19 6.5v6c0 1.38-1.12 2.5-2.5 2.5H10l-3.2 2.4c-.53.4-1.3.02-1.3-.64V15c-.95-.44-1.5-1.34-1.5-2.5v-6Z"
-              stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-          </svg>
-        </span>
-        <span class="side-item__text">${escapeHtml(title)}</span>
-      </a>
+        <a class="side-item" href="./chat.html?chatId=${encodeURIComponent(id)}">
+          <span class="side-item__icon">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M5 6.5C5 5.12 6.12 4 7.5 4h9C17.88 4 19 5.12 19 6.5v6c0 1.38-1.12 2.5-2.5 2.5H10l-3.2 2.4c-.53.4-1.3.02-1.3-.64V15c-.95-.44-1.5-1.34-1.5-2.5v-6Z"
+                stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span class="side-item__text">${escapeHtml(title)}</span>
+        </a>
 
-      <button type="button" class="chat-item__more" aria-label="더보기">⋯</button>
+        <button type="button" class="chat-item__more" aria-label="더보기">⋯</button>
 
-      <div class="chat-item__dropdown" role="menu">
-        <button type="button" class="chat-item__action" data-action="delete">삭제</button>
-      </div>
-    `;
+        <div class="chat-item__dropdown" role="menu">
+          <button type="button" class="chat-item__action" data-action="delete">삭제</button>
+        </div>
+      `;
 
     const btnMore = wrapper.querySelector(".chat-item__more");
     btnMore.addEventListener("click", (e) => {
@@ -101,7 +139,7 @@ document.addEventListener("DOMContentLoaded", () => {
       e.stopPropagation();
       closeAllDropdowns();
 
-      const ok = confirm("이 채팅을 삭제할까요?");
+      const ok = await CustomModal.confirm("이 채팅을 삭제할까요?");
       if (!ok) return;
 
       await deleteChatRoom(id);
@@ -126,10 +164,10 @@ document.addEventListener("DOMContentLoaded", () => {
         },
       );
       const text = await res.text();
-      if (!res.ok) alert("삭제 실패: " + text);
+      if (!res.ok) await CustomModal.alert("삭제 실패: " + text);
     } catch (err) {
       console.error(err);
-      alert("서버 연결 실패");
+      await CustomModal.alert("서버 연결 실패");
     }
   }
 
@@ -138,19 +176,42 @@ document.addEventListener("DOMContentLoaded", () => {
     myChatList.innerHTML = "";
 
     const token = getToken();
-    if (!token) return;
+
+    if (!token) {
+      authConfirmed = false;
+      renderAuthUI();
+      return;
+    }
 
     try {
       const res = await fetch(`${API_BASE}/api/chats/recent`, {
         method: "GET",
         headers: authHeaders(),
       });
-      if (!res.ok) return;
+
+      if (res.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("userName");
+        authConfirmed = false;
+        renderAuthUI();
+        return;
+      }
+
+      if (!res.ok) {
+        authConfirmed = false;
+        renderAuthUI();
+        return;
+      }
+
+      authConfirmed = true;
+      renderAuthUI();
 
       const rooms = await res.json();
       rooms.forEach((room) => myChatList.appendChild(createChatItem(room)));
     } catch (err) {
       console.error(err);
+      authConfirmed = false;
+      renderAuthUI();
     }
   }
 
@@ -165,16 +226,21 @@ document.addEventListener("DOMContentLoaded", () => {
     item.className = isUser ? "msg msg--user" : "msg";
 
     item.innerHTML = `
-    <div class="msg__avatar ${isUser ? "msg__avatar--q" : "msg__avatar--a"}">
-      ${isUser ? "Q" : "A"}
-    </div>
-    <div class="msg__bubble ${!isUser ? "msg__bubble--a" : ""}">
-      <div class="msg__text">${text ?? ""}</div>
-    </div>
-  `;
+      <div class="msg__avatar ${isUser ? "msg__avatar--q" : "msg__avatar--a"}">
+        ${isUser ? "Q" : "A"}
+      </div>
+      <div class="msg__bubble ${!isUser ? "msg__bubble--a" : ""}">
+        <div class="msg__text">${text ?? ""}</div>
+      </div>
+    `;
 
     chatWrap.appendChild(item);
-    chatWrap.scrollTop = chatWrap.scrollHeight;
+
+    // 마지막 메시지로 스크롤
+    item.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
   }
 
   function clearMessages() {
@@ -195,7 +261,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const text = await res.text();
       if (!res.ok) {
-        alert("메시지 로드 실패: " + text);
+        await CustomModal.alert("메시지 로드 실패: " + text);
         return;
       }
 
@@ -203,7 +269,7 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         messages = JSON.parse(text);
       } catch {
-        alert("메시지 응답이 JSON이 아닙니다: " + text);
+        await CustomModal.alert("메시지 응답이 JSON이 아닙니다: " + text);
         return;
       }
 
@@ -214,9 +280,15 @@ document.addEventListener("DOMContentLoaded", () => {
         const content = m.content ?? m.message ?? "";
         renderMessage(role, content);
       });
+      setTimeout(() => {
+        const last = chatWrap.lastElementChild;
+        if (last) {
+          last.scrollIntoView({ behavior: "auto", block: "end" });
+        }
+      }, 0);
     } catch (err) {
       console.error(err);
-      alert("서버 연결 실패");
+      await CustomModal.alert("서버 연결 실패");
     }
   }
 
@@ -226,14 +298,21 @@ document.addEventListener("DOMContentLoaded", () => {
     const msg = (input?.value || "").trim();
     if (!msg) return;
 
+    renderMessage("USER", msg);
+
+    input.value = "";
+    updateSendState();
+
     const token = getToken();
     if (!token) {
-      alert("로그인이 필요합니다.");
+      await CustomModal.alert("로그인이 필요합니다.");
       return;
     }
 
     if (!chatId) {
-      alert("채팅방 ID가 없습니다. index에서 새로 시작하세요.");
+      await CustomModal.alert(
+        "채팅방 ID가 없습니다. index에서 새로 시작하세요.",
+      );
       return;
     }
 
@@ -251,7 +330,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const text = await res.text();
       if (!res.ok) {
-        alert("전송 실패: " + text);
+        await CustomModal.alert("전송 실패: " + text);
         updateSendState();
         return;
       }
@@ -260,27 +339,23 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         messages = JSON.parse(text);
       } catch {
-        alert("전송 응답이 JSON이 아닙니다: " + text);
+        await CustomModal.alert("전송 응답이 JSON이 아닙니다: " + text);
         updateSendState();
         return;
       }
 
-      input.value = "";
-      updateSendState();
-
       // 서버에서 전체 메시지를 내려주는 방식이라면 통째로 다시 렌더
-      clearMessages();
-      messages.forEach((m) => {
-        const role = m.role;
-        const content = m.content ?? m.message ?? "";
-        renderMessage(role, content);
-      });
+      const lastMessage = messages[messages.length - 1];
+      const role = lastMessage.role;
+      const content = lastMessage.content ?? lastMessage.message ?? "";
+
+      renderMessage(role, content);
 
       // 최근 채팅 목록 갱신
       await loadRecentChats();
     } catch (err) {
       console.error(err);
-      alert("서버 연결 실패");
+      await CustomModal.alert("서버 연결 실패");
       updateSendState();
     }
   }
@@ -300,6 +375,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // 초기 실행
+  renderAuthUI();
   loadRecentChats();
   loadMessages();
 });

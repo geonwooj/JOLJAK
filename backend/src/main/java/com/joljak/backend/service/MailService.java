@@ -24,8 +24,7 @@ public class MailService {
         msg.setSubject("[AI Patent Office] 이메일 인증코드");
         msg.setText(
                 "회원가입 이메일 인증코드입니다.\n\n" +
-                "인증코드: " + code + "\n\n" +
-                "※ 유효시간 내에 입력해주세요."
+                "인증코드: " + code + "\n\n"
         );
         mailSender.send(msg);
     }

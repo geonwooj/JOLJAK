@@ -51,7 +51,7 @@ function updatePasswordHints() {
   if (!pw2) {
     pwMatchHint.style.display = "none";
   } else {
-    pwMatchHint.style.display = (pw && pw === pw2) ? "none" : "block";
+    pwMatchHint.style.display = pw && pw === pw2 ? "none" : "block";
   }
 }
 
@@ -72,6 +72,13 @@ sendCodeBtn.addEventListener("click", async () => {
     return;
   }
 
+  // 1. 클릭 즉시 버튼 상태 변경 (사용자 피드백)
+  sendCodeBtn.disabled = true;
+  sendCodeBtn.textContent = "발송 중...";
+
+  // 2. 하단 상태 메시지에 즉시 표시
+  setVerifyStatus("이메일을 발송하고 있습니다. 잠시만 기다려 주세요...", true);
+
   try {
     const res = await fetch("http://127.0.0.1:8080/api/auth/email/send", {
       method: "POST",
@@ -81,16 +88,28 @@ sendCodeBtn.addEventListener("click", async () => {
 
     const text = await res.text();
     if (!res.ok) {
+      // 실패 시 다시 버튼 활성화
+      sendCodeBtn.disabled = false;
+      sendCodeBtn.textContent = "인증코드 받기";
       await CustomModal.alert("인증코드 전송 실패: " + text);
       return;
     }
 
+    // 성공 시
     verifyBox.style.display = "block";
     setVerifyStatus("인증코드를 전송했습니다. 메일함을 확인하세요.", true);
-    await CustomModal.alert(text);
+    await CustomModal.alert("인증코드가 발송되었습니다."); // 서버 응답 완료 후 모달
   } catch (err) {
     console.error(err);
+    sendCodeBtn.disabled = false;
+    sendCodeBtn.textContent = "인증코드 받기";
     await CustomModal.alert("서버 연결 실패. 백엔드 실행 상태를 확인하세요.");
+  } finally {
+    // 성공 후에도 버튼 이름을 원래대로 돌려주고 싶다면 (재전송용)
+    if (!emailVerified) {
+      sendCodeBtn.disabled = false;
+      sendCodeBtn.textContent = "인증코드 재발송";
+    }
   }
 });
 
@@ -123,7 +142,7 @@ verifyCodeBtn.addEventListener("click", async () => {
 
     emailVerified = true;
     verifiedEmail = email;
-    setVerifyStatus("이메일 인증 완료 ✅", true);
+    setVerifyStatus("이메일 인증 완료", true);
     await CustomModal.alert(text);
   } catch (err) {
     console.error(err);
@@ -142,7 +161,7 @@ form.addEventListener("submit", async (e) => {
 
   // 기본 입력 체크
   if (!name || !email || !password || !passwordConfirm) {
-    await CustomModal.alert("모든 필드를 입력해주세요.");
+    await CustomModal.alert("모든 항목을 입력해주세요.");
     return;
   }
 
@@ -162,12 +181,6 @@ form.addEventListener("submit", async (e) => {
 
   if (password !== passwordConfirm) {
     await CustomModal.alert("비밀번호가 일치하지 않습니다.");
-    return;
-  }
-
-  // ✅ 약관 체크는 “버튼 눌렀을 때”만 안내
-  if (!termsCheck.checked) {
-    await CustomModal.alert("이용약관 및 개인정보처리방침에 동의해주세요.");
     return;
   }
 

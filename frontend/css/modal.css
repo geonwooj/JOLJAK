@@ -28,6 +28,7 @@
   margin-bottom: 24px;
   line-height: 1.5;
   color: #333;
+  word-break: break-all;
 }
 
 /* 버튼 그룹 */
