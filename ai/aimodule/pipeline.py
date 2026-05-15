@@ -15,7 +15,26 @@ class GPTPipeline:
         user = summarize.get_summarize_prompt(text)
         raw = self.llm.call(system, user)
         return self._load_json(raw, "summarize")
+    def refine_user_idea(self, raw_idea: str):
+        """사용자 아이디어를 300~500자의 기술 문장으로 구체화"""
+        system = "너는 발명가의 아이디어를 특허 분석용 전문 기술 문장으로 변환하는 전문가이다."
+        user = f"""
+        [사용자 원본 입력]
+        {raw_idea}
 
+        [지시]
+        1. 핵심 기술적 구성 요소(전류감지, 인체감지, 지연 설정 등)와 작동 원리를 상세히 기술하라.
+        2. 단순히 요약하지 말고, '...를 포함하며, ...를 특징으로 하는' 식의 특허 명세서 문어체를 사용하라.
+        3. 결과물은 KorPatBERT 모델이 유사도를 잘 파악할 수 있도록 300~500자 내외로 작성하라.
+
+        [출력 형식(JSON)]
+        {{
+          "refined_idea": "구체화된 기술 문장",
+          "keywords": ["핵심", "기술", "키워드"]
+        }}
+        """
+        raw = self.llm.call(system, user)
+        return self._load_json(raw, "refine_idea")
     # ----------------------------
     # 청구항 파싱
     # ----------------------------
@@ -71,18 +90,16 @@ class GPTPipeline:
         # 3. 청구항 생성 (검색 결과 전체를 참고 자료로 전달)
         # claim_gen 프롬프트에서 여러 선행 문헌을 참고할 수 있도록 elements 대신 prior_arts 전달
         system, user = claim_gen.get_claim_gen_prompt(
-            elements=prior_arts[0], # 기준 특허
-            prior_arts=prior_arts,   # [추가] 전체 검색 결과 리스트
-            diff_elements=diff_result,
+            elements=prior_arts[0],
+            prior_arts=prior_arts,
+            diff_elements=diff_result, # 개선된 diff 결과 전달
             user_idea=user_idea,
-            field=field,
-            n_shots=n_shots,
-            temperature=temperature
+            field=field
         )
 
         drafts = []
         # 연구 방법론의 신뢰성을 위해 5개의 초안을 생성한 뒤 합의(Consensus) 도출
-        for _ in range(5):  
+        for _ in range(2):  
             raw = self.llm.call(system, user)
             drafts.append(raw)
 
