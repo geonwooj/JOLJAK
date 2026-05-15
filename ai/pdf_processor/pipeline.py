@@ -5,7 +5,7 @@ import numpy as np
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .quality import is_low_quality_text
-from .normalize import normalize_text
+from .normalize_dispatch import normalize_page_text
 from .section import extract_sections
 from .claims import split_claims
 from .detect import detect_tables, detect_equations
@@ -97,7 +97,8 @@ def extract_text_pages(pages):
                 continue
 
         if text:
-            full_text_parts.append(normalize_text(text))
+            normalized = normalize_page_text(text)
+            full_text_parts.append(normalized)
 
     return "\n\n".join(full_text_parts)
 
