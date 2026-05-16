@@ -1,0 +1,2022 @@
+{
+    "title": "]\n스캐닝된 지향성 안테나를 이용하는 무선 통신 시스템 및 통신방법\n[ ]\n제1a도는 본 발명의 특정 실시예에 따른 육상에 근거된 무선 이동 통신 시스템을 도시하는 도.\n제1b도는 제1a도에 도시된 이동 통신 시스템에 이용되는 기지국을 도시하는 도.\n제2도는 제1a도에 도시된 육상에 근거된 무선 이동 통신 시스템의 기지국 수신 시스템의 블록도.\n제3도는 제1a도의 육상에 근거된 무선 이동 통신 시스템으로 구현될 원격국 송신기의 송신 메시지 구성의 블록도.\n제4도는 제2도에 도시된 기지국 수신 시스템에서 구현되는 데이타 처리장치의 논리 흐름의 순서도.\n제5도는 전형적인 RF 신호 처리장치에 접속된 기지국 수신 안테나의 특정 실시예를 도시하는 도.",
+    "abstract": "무선통신시스템 은 일 또는 그 이상의 원격국 으로 신호를 송신하고 그로부터 신호를 수신하기 위한 기지국( 1\n2) 으로 구성된다. 기지국 에는 기지국 수신기에 결합된 일 이상의 수신안테나 가 제공된다. 수신안테나 에\n는 수평면상에 지향된 패턴이 제공되고, 커버리지 영역내에 위치된 원격국에 의해 송신된 동기화 신호가 기지국 수신기\n \n\n\n등록특허 10- 0292008\n \n에 의해 수신될 시간까지, 지향성 패턴을 방위상으로 저정하기 위한 기구가 제공된다. 동기화 신호의 검출시에, 수신안\n테나 패턴의 스캐닝은 메시지 정보가 원격국 으로부터 수용되고 원격국에 의해 요청된 특정 수신기로 발송될 수 있\n을 시간까지 정지된다. 정보를 수신할시에, 기지국 은 안테나 의 스캐닝을 재개할 것이며, 정보는 그 요청된 수\n신지로 발송될 것이다.\n \n대표도",
+    "claims": "청구항 1.\n \n무선통신 시스템에 있어서, 일이상의 원격국으로/으로부터 신호를 송신 및 수신하기 위한 복수의 기지국으로서, 상기 \n일이상의 원격국은 상기 복수의 기지국 중의 일이상의 가까운 가시거리( line- of- sight) 내에 있으며, 상기 복수의 기\n지국의 각각은 기지국 수신기에 연결된 수신 안테나를 일이상 포함하며, 상기 일이상의 수신 안테나는 수평면에서 지향\n성 패턴을 가지며 상기 지향성 패턴이 하나의 방위 위치에서 다른 방위 위치로 계속해서 스캔하도록 조정하는 수단을 \n가지는, 복수의 기지국; 상기 일이상의 수신 안테나에서 수신된 신호를 필터링하는 수단; 상기 필터링 수단에 의해 필터\n링한 뒤 상기 수신된 신호를 처리하는 수단; 상기 수신된 신호의 신호강도를 검출하는 수단; 및 상기 조정수단을 제어하\n는 수단을 포함하며, 상기 제어수단은 상기 조정수단을 중지하도록 명령하는 수단 및, 더이상의 스캐닝을 하지 않은채 \n상기 수신된 신호의 상기 신호강도가 소정 임계값 이상이 되는 방위 위치에서 상기 수신 신호를 수신하도록 상기 일이\n상의 수신 안테나에게 명령하는 수단을 포함하는 것을 특징으로 하는 무선통신 시스템.\n \n청구항 2.\n제1항에 있어서, 상기 조정 수단을 제어하기 위한 상기 수단은 상기 수신된 신호의 신호강도의 함수로써 상기 지향성 \n패턴의 스캐닝을 제어하기 위한 수단을 포함하는 것을 특징으로 하는 무선통신시스템.\n청구항 3.\n \n- 13 -\n\n등록특허 10- 0292008\n \n제1항에 있어서, 상기 일 또는 그 이상의 원격국을 더 포함하고, 소정의 원격국은 상기 기지국 수신기에 의해 모니터링\n된 주파수 대역내에서 식별 신호패턴 및 메세지 정보를 송신하기 위한 수단을 각각 포함하는 것을 특징으로 하는 무선\n통신시스템.\n청구항 4.\n제3항에 있어서, 상기 원격국의 상기 송신수단은 발신지 주소, 수신지 주소, 메세지, 및 에러정정정보를 포함하는 상기 \n메세지 정보를 표현하기 위한 수단을 더 포함하며, 상기 메세지 정보 모두는 상기 식별신호패턴의 송신에 뒤이어 송신\n되는 것을 특징으로 하는 무선통신시스템.\n청구항 5.\n제3항에 있어서, 상기 처리수단은 상기 수신된 신호에 포함되는 정보를 디코딩 하기 위한 수단을 포함하는 것을 특징으\n로 하는 무선통신시스템.\n청구항 6.\n제5항에 있어서, 상기 조정 수단을 제어하기 위한 수단은 상기 검출수단에 의해 판단된 수신된 신호강도가 상기 소정의 \n임계값보다 더 큰지를 판단하기 위한 수단; 및 상기 수신된 신호강도가 상기 소정의 임계값보다 더 크지 않다면 상기 조\n정수단이 상기 지향성 패턴을 한 방위 위치에서 다른 방위 위치로 이동시키도록 명령하기 위한 수단을 포함하는 것을 \n특징으로 하는 무선통신시스템.\n청구항 7.\n제6항에 있어서, 상기 임계값은 예상되는 백그라운드 잡음레벨보다 사실상 더 높은 신호레벨로 구성되는 것을 특징으로 \n하는 무선통신시스템.\n청구항 8.\n \n제5항에 있어서, 상기 디코딩 수단은 상기 식별신호패턴을 디코딩하기 위한 수단을 포함하며, 상기 시스템은 상기 식별\n신호패턴이 정확하게 디코딩되어졌는지를 판단하기 위한 수단; 및 상기 식별신호패턴이 정확하게 디코딩되어졌다는 것\n으로 상기 판단수단에 의해 판단된다면, 상기 수신된 신호의 나머지부를 디코딩하고 대응 메세지를 망으로 발송하기 위\n한 수단을 포함하며, 상기 조정 수단을 제어하기 위한 수단은 상기 식별신호패턴이 정확하게 디코딩되어 지지 않았다면, \n상기 스캐닝 수단이 상기 지향성 패턴을 한 방위 위치에서 다른 방위 위치로 이동시키도록 명령하기 위한 수단을 더 포\n함하는 것을 특징으로 하는 무선통신시스템.\n \n청구항 9.\n제1항에 있어서, 상기 일이상의 수신안테나는 공선상 쌍극 안테나의 어레이로 구성되는 것을 특징으로 하는 무선통신시\n스템.\n청구항 10.\n제1항에 있어서, 상기 무선통신시스템은 마이크로셀룰러 통신망으로 구성되는 것을 특징으로 하는 무선통신시스템.\n청구항 11.\n제1항에 있어서, 상기 무선통신시스템은 무선 데이타망으로 구성되는 것을 특징으로 하는 무선통신시스템.\n \n- 14 -\n\n등록특허 10- 0292008\n \n청구항 12.\n제1항에 있어서, 상기 무선통신시스템은 응답확인 페이징 시스템으로 구성되는 것을 특징으로 하는 무선통신시스템.\n청구항 13.\n제1항에 있어서, 상기 시스템은 상기 기지국에 접속되고, 원격통신 교환망에 접속된 망 제어센터를 더 포함하는 것을 \n특징으로 하는 무선통신시스템.\n청구항 14.\n제1항에 있어서, 각각의 상기 원격국은 4W 미만의 효과적인 등방성 방사전력을 가진 신호를 송신하는 송신기를 포함하\n는 것을 특징으로 하는 무선통신시스템.\n청구항 15.\n제1항에 있어서, 각각의 상기 원격국은 2W 미만의 효과적인 등방성 방사전력을 가진 신호를 송신하는 송신기를 포함하\n는 것을 특징으로 하는 무선통신시스템.\n청구항 16.\n제1항에 있어서, 상기 지향성 패턴은 30° 미만의 방위평면에서 및 30° 미만의 엘리베이션 평면에서의 반전력 빔폭으\n로 구성되는 것을 특징으로 하는 무선통신시스템.\n청구항 17.\n제1항에 있어서, 상기 지향성 패턴은 6° 미만의 방위평면에서 및 8° 미만의 엘리베이션 평면에서의 반전력 빔폭으로 \n구성되는 것을 특징으로 하는 무선통신시스템.\n청구항 18.\n제1항에 있어서, 상기 일이상의 수신안테나는 다수의 개별 안테나를 포함하며, 각각의 상기 개별 안테나는 360° 의 일\n부분과 동일한 범위에 결쳐 방위상으로 지향성 빔을 스캐닝하기 위한 수단을 포함하며, 상기 개별 안테나는 상기 개별 \n안테나에 의해 스캐닝된 전체영역이 360° 인 것으로 배열되는 것을 특징으로 하는 무선통신 시스템.\n청구항 19.\n제1항에 있어서, 그 일부가 수신기, 및 공통 주파수 채널을 공유하는 대응 스캐닝된 기지국 수신안테나를 포함하는 다\n수의 기지국, 및 공통주파수 채널을 공유하는 상기 기지국 수신안테나의 스캐닝을 동기화하기 위한 수단을 더 포함하는 \n것을 특징으로 하는 무선통신시스템.\n청구항 20.\n제1항에 있어서, 각각의 상기 원격국은 상기 기지국으로 신호를 송신하고 그로부터 신호를 수신하기 위해, 송신기 및 \n수신기에 결합된 전지향성 안테나를 포함하는 것을 특징으로 하는 무선통신시스템.\n청구항 21.\n제1항에 있어서, 상기 기지국은 전지향성 송신안테나를 포함하는 것을 특징으로 하는 무선통신시스템.\n \n- 15 -\n\n등록특허 10- 0292008\n \n청구항 22.\n \n통신방법에 있어서, 일이상의 원격국으로/으로부터 신호를 송신 및 수신하기 위한 복수의 기지국을 동작시키는 단계로\n서, 상기 일이상의 원격국은 상기 복수의 기지국 중의 일이상의 가까운 가시거리( line- of- sight) 내에 있으며, 상기 방\n법은 상기 기지국 각각의 수신기에 연결된 일이상의 수신 안테나가 하나의 방위 위치에서 다른 방위 위치로 계속해서 \n스캔하도록 조정하는 단계를 포함하며, 상기 일이상의 수신 안테나는 수평면에서 지향성 패턴을 가지는, 기지국을 동작\n시키는 단계; 상기 일이상의 수신 안테나에서 수신된 신호를 필터링하는 단계; 상기 필터링 이후 상기 수신된 신호를 처\n리하는 단계; 상기 수신된 신호의 신호강도를 모니터링하는 단계; 및 상기 조정을 제어하는 단계를 포함하며, 상기 제어\n하는 단계는 상기 조정수단을 중지하도록 명령하는 단계를 포함하며, 더이상의 스캐닝을 하지 않은채, 방위 위치에서 \n수신된 상기 신호의 상기 신호강도가 소정 임계값 이상이 되는 상기 방위 위치에서 상기 수신신호를 수신하도록 상기 \n일이상의 수신 안테나를 제어하는 것을 특징으로 하는 통신방법.\n \n청구항 23.\n제22항에 있어서, 상기 조정을 제어하는 단계는 상기 수신된 신호의 신호강도의 함수로써 상기 지향성 패턴의 스캐닝을 \n제어하는 단계를 더 포함하는 것을 특징으로 하는 통신방법.\n청구항 24.\n제22항에 있어서, 상기 기지국을 동작시키는 단계 이후, 상기 기지국 수신기에 의해 모니터링된 주파수 대역내에서 식\n별 신호패턴 및 메세지 정보를 송신하도록 상기 원격국중 선택된 원격국을 동작시키는 단계를 더 포함하는 것을 특징으\n로 하는 통신방법.\n청구항 25.\n제24항에 있어서, 상기 원격국을 동작시키는 단계는 발신지 주소, 수신지 주소, 메세지, 및 에러정정 정보를 포함하는 \n상기 메세지 정보를 표현하도록 상기 원격국중 선택된 원격국을 동작시키는 단계를 더 포함하며, 상기 메세지 정보 모\n두는 상기 식별신호패턴의 송신에 뒤이어 송신되는 것을 특징으로 하는 통신방법.\n청구항 26.\n제24항에 있어서, 상기 처리하는 단계는 상기 수신된 신호에 포함되는 정보를 디코딩하는 단계를 포함하는 것을 특징으\n로 하는 통신방법.\n청구항 27.\n제26항에 있어서, 상기 조정을 제어하는 단계는, 상기 수신된 신호강도가 상기 소정의 임계값보다 더 큰지를 판단하는 \n단계; 및 상기 수신된 신호강도가 상기 소정의 임계값보다 더 크지 않다면 상기 지향성 패턴을 한 방위 위치에서 다른 \n방위 위치로 이동시키도록 상기 조정하는 단계를 제어하는 단계를 포함하는 것을 특징으로 하는 통신방법.\n청구항 28.\n제27항에 있어서, 상기 소정 임계값은 기대되는 백그라운드 잡음레벨보다 사실상 더 높은 신호레벨로 구성되는 것을 특\n징으로 하는 통신방법.\n청구항 29.\n \n \n- 16 -\n\n등록특허 10- 0292008\n \n제26항에 있어서, 상기 디코딩하는 단계는 상기 식별신호패턴을 디코딩하는 단계를 포함하며, 상기 통신방법은 상기 식\n별신호패턴이 정확하게 디코딩되어졌는지를 판단하는 단계; 상기 판단하는 단계동안 상기 식별신호패턴이 정확하게 디\n코딩되어졌다는 것으로 판단된다면, 상기 수신된 신호의 나머지부를 디코딩하고 대응 메세지를 망으로 발송하는 단계, \n상기 식별신호패턴이 정확하게 디코딩되어지지 않았다면, 상기 지향성 패턴을 한 방위 위치에서 다른 방위 위치로 이동\n시키도록 상기 조정하는 단계를 제어하는 단계를 더 포함하는 것을 특징으로 하는 통신방법.\n \n청구항 30.\n제22항에 있어서, 상기 일이상의 수신 안테나는 공선상 쌍극 안테나의 어레이로 구성되는 것을 특징으로 하는 통신방법.\n청구항 31.\n제22항에 있어서, 상기 통신방법은 마이크로셀룰러 통신망을 이용하는 것을 특징으로 하는 통신방법.\n청구항 32.\n제22항에 있어서, 상기 통신방법은 무선 데이타망을 이용하는 것을 특징으로 하는 통신방법.\n청구항 33.\n제22항에 있어서, 상기 통신방법은 응답확인 페이징 시스템을 이용하는 것을 특징으로 하는 통신방법.\n청구항 34.\n제22항에 있어서, 상기 기지국에 접속되고, 원격통신 교환망에 접속된 망 제어센터를 동작시키는 단계를 더 포함하는 \n것을 특징으로 하는 통신방법.\n청구항 35.\n제22항에 있어서, 각각의 상기 원격국은 4W 미만의 효과적인 등방성 방사전력을 가진 신호를 송신하는 송신기를 포함\n하는 것을 특징으로 하는 통신방법.\n청구항 36.\n제22항에 있어서, 각각의 상기 원격국은 2W 미만의 효과적인 등방성 방사전력을 가진 신호를 송신하는 송신기를 포함\n하는 것을 특징으로 하는 통신방법.\n청구항 37.\n제22항에 있어서, 상기 지향성 패턴은 30° 미만의 방위평면에서 및 30° 미만의 엘리베이션 평면에서의 반전력 빔폭으\n로 구성되는 것을 특징으로 하는 통신방법.\n청구항 38.\n제22항에 있어서, 상기 지향성 패턴은 6° 미만의 방위평면에서 및 8° 미만의 엘리베이션 평면에서의 반전력 빔폭으로 \n구성되는 것을 특징으로 하는 통신방법.\n청구항 39.\n \n- 17 -\n\n등록특허 10- 0292008\n \n제22항에 있어서, 상기 일이상의 수신안테나는 다수의 개별 안테나를 포함하며, 상기 스캐닝하는 단계는 360° 의 일부\n분과 동일한 범위에 결쳐 방위상으로 각각의 상기 개별 안테나의 지향성 빔을 스캐닝하는 단계를 포함하며, 상기 개별 \n안테나는 상기 개별 안테나에 의해 스캐닝된 전체영역이 360° 인 것으로 배열되는 것을 특징으로 하는 무선통신 시스\n템.\n청구항 40.\n제22항에 있어서, 상기 복수의 기지국을 동작시키는 단계는, 그 일부가 수신기 및 공통 주파수 채널을 공유하는 대응 \n스캐닝된 기지국 수신안테나를 포함하는 다수의 기지국을 동작시키는 단계; 및 상기 공통 주파수 채널을 공유하는 상기 \n기지국 수신안테나의 스캐닝을 동기화하는 단계를 더 포함하는 것을 특징으로 하는 통신방법.\n청구항 41.\n제22항에 있어서, 각각의 상기 원격국은 상기 기지국으로 신호를 송신하고 그로부터 신호를 수신하기 위해, 송신기 및 \n수신기에 결합된 전지향성 안테나를 포함하는 것을 특징으로 하는 통신방법.\n청구항 42.\n제22항에 있어서, 상기 기지국은 전지향성 송신안테나를 포함하는 것을 특징으로 하는 통신방법.\n청구항 43.\n제1항에 있어서, 상기 명령수단은 상기 수신된 신호의 신호강도가 상기 소정 임계 값 이상인 것을 검출될때까지 방위상\n으로 상기 지향성 패턴을 지속적으로 스캐닝하도록 상기 조정 수단에 명령하는 것을 특징으로 하는 무선통신 시스템.\n청구항 44.\n \n제1항에 있어서, 상기 원격국중 선택된 원격국은 식별신호패턴을 포함하는 메세지 구조를 송신하기 위한 수단을 포함하\n고, 그리고 상기 처리수단은 상기 식별신호패턴을 디코딩하기 위한 수단을 포함하고, 상기 명령수단은 상기 수신된 신\n호의 신호강도가 상기 소정 임계값 이상인 것으로 검출된 이후일지라도, 상기식별신호패턴이 상기 디코딩 수단에 의해 \n정확하게 디코딩되어지지 않았다면, 상기 조정 수단에 상기 지향성 패턴의 스캐닝을 제개하도록 명령하는 것을 특징으\n로 하는 무선통신시스템.\n \n청구항 45.\n제22항에 있어서, 상기 지시하는 단계는 상기 수신된 신호의 신호강도가 상기 소정 임계값 이상인 것으로 검출될때까지 \n방위상으로 상기 지향성 패턴을 지속적으로 스캐닝하도록 상기 조정수단에 명령하는 단계를 더 포함하는 것을 특징으\n로 하는 통신방법.\n청구항 46.\n \n제22항에 있어서, 상기 기지국을 동작시키는 단계 이후 식별신호패턴을 포함하는 메세지 구조를 송신하도록 상기 원격\n국중 선택된 원격국을 동작시키는 단계를 더 포함하고, 상기 처리하는 단계는 상기 식별 신호패턴을 디코딩하는 단계를 \n포함하고, 상기 명령하는 단계는 상기 수신된 신호의 신호강도가 상기 소정 임계값 이상인 것으로 검출된 이후일지라도, \n상기 식별신호패턴 이 정확하게 디코딩되어지지 않았다면, 상기 스캐닝 수단에 상기 지향성 패턴의 스캐닝을 재개하도\n록 명령하는 단계를 포함하는 것을 특징으로 하는 통신방법.\n \n \n- 18 -\n\n등록특허 10- 0292008\n \n청구항 47.\n \n무선통신 시스템에 있어서, 각각 수파수 대역에서 식별신호패턴 및 메시지 정보를 전송하는 수단을 포함하는 일이상의 \n원격국; 상기 원격국으로/으로부터 신호를 송신 및 수신하기 위한 기지국으로서, 상기 기지국은 상기 주파수 대역을 모\n니터하는 기지국에 연결된 일이상의 수신 안테나를 포함하며, 상기 일이상의 수신 안테나는 수평면에서 지향성 패턴 및 \n상기 지향성 패턴을 방위상으로스캐닝하는 수단을 포함하는 기지국; 상기 일이상의 수신 안테나에서 수신된 신호를 필\n터링하는 수단; 상기 필터링 수단에 의한 필터링 후에 상기 수신된 신호를 처리하는 수단으로서, 상기 수신된 신호에 포\n함된 정보를 디코딩하는 수단을 포함하는 처리수단; 상기 수신된 신호의 신호강도를 모니터링하는 수단; 및 상기 스캐\n닝 수단을 제어하는 수단을 포함하며, 상기 디코딩 수단은 상기 식별신호패턴을 디코딩하는 수단을 포함하며, 상기 시\n스템은, 상기 식별신호패턴이 정확히 디코드되었는지를 결정하는 수단; 및 상기 식별신호패턴이 정확히 디코드된 것으\n로 상기 결정수단에 의해 결정된다면, 상기 수신된 신호의 나머지 부분도 디코딩하고 대응하는 메세지를 망으로 보내는 \n수단을 더 포함하며, 상기 스캐닝 수단을 제어하는 상기 수단은, 상기 식별신호패턴이 정확히 디코드되지 않았다면, 상\n기 스캐닝 수단이 하나의 방위 위치에서 다른 위치로 상기 지향성 패턴을 이동시키도록 명령하는 수단을 더 포함하는 \n것을 특징으로 하는 무선통신 시스템.\n \n청구항 48.\n \n통신방법에 있어서, 일이상의 원격국으로/으로부터 신호를 송신 및 수신하기 위해 기지국을 동작시키는 단계로서, 상기 \n방법은 상기 기지국의 수신기에 연결된 일이상의 수신 안테나가 방위상으로 스캐닝하는 단계를 포함하며, 상기 일이상\n의 수신 안테나는 수평면에서 지향성 패턴을 가지는, 기지국을 동작시키는 단계; 상기 기지국 수신기에 의해 모니터된 \n주파수 대역내에서, 상기 원격국중의 선택된 하나가 식별신호패턴 및 메시지 정보를 전송하도록 동작시키는 단계; 상기 \n일이상의 수신 안테나에서 수신된 신호를 필터링하는 단계; 필터링 후에 상기 수신된 신호를 처리하는 단계로서, 상기 \n수신된 신호에 포함된 정보를 디코딩하는 단계를 포함하는 처리단계; 상기 수신된 신호의 신호강도를 모니터링하는 단\n계; 및 상기 스캐닝을 제어하는 단계;를 포함하며, 상기 디코딩은 상기 식별신호패턴을 디코딩하는 단계를 포함하며, 상\n기 방법은, 상기 식별신호패턴이 정확히 디코드되었는지를 결정하는 단계; 상기 결정단계 동안 상기 식별신호패턴이 정\n확히 디코드된 것으로 결정된다면, 상기 수신된 신호의 나머지 부분도 디코딩하고 대응하는 메시지를 네트워크로 보내\n는 단계; 및 상기 식별신호패턴이 올바로 디코드되지 않았다면, 하나의 방위 위치에서 다른 위치로 상기 지향성 패턴을 \n이동시키도록 상기 스캐닝 수단을 제어하는 단계;를 더 포함하는 것을 특징으로 하는 통신방법.\n \n도면\n \n- 19 -\n\n듬목특히 10- 029200 도면11 립실동을 NCC 근\n\n등록특허 10- 0292008\n \n도면 1b\n \n- 21 -\n\n등록특허 10- 0292008\n \n도면 2\n \n- 22 -\n\n등록특허 10- 0292008\n \n도면 3\n \n- 23 -\n\n등록특허 10- 0292008\n \n도면 4\n \n- 24 -\n\n등록특허 10- 0292008\n \n도면 5\n \n- 25 -\n\n등록특허 10- 0292008\n \n도면 6\n \n- 26 -\n\n등록특허 10- 0292008\n \n도면 7\n \n- 27 -\n\n등록특허 10- 0292008\n \n도면 8\n \n- 28 -",
+    "description": "",
+    "ipc": "H04B 7/26",
+    "id": "KR100292008B1",
+    "extracted_images": [
+        {
+            "page": 1,
+            "filename": "KR100292008B1_p1_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p1_img1.png"
+        },
+        {
+            "page": 1,
+            "filename": "KR100292008B1_p1_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p1_img2.png"
+        },
+        {
+            "page": 1,
+            "filename": "KR100292008B1_p1_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p1_img3.png"
+        },
+        {
+            "page": 1,
+            "filename": "KR100292008B1_p1_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p1_img4.png"
+        },
+        {
+            "page": 1,
+            "filename": "KR100292008B1_p1_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p1_img5.png"
+        },
+        {
+            "page": 1,
+            "filename": "KR100292008B1_p1_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p1_img6.png"
+        },
+        {
+            "page": 1,
+            "filename": "KR100292008B1_p1_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p1_img7.png"
+        },
+        {
+            "page": 1,
+            "filename": "KR100292008B1_p1_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p1_img8.png"
+        },
+        {
+            "page": 1,
+            "filename": "KR100292008B1_p1_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p1_img9.png"
+        },
+        {
+            "page": 1,
+            "filename": "KR100292008B1_p1_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p1_img10.png"
+        },
+        {
+            "page": 2,
+            "filename": "KR100292008B1_p2_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p2_img1.png"
+        },
+        {
+            "page": 2,
+            "filename": "KR100292008B1_p2_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p2_img2.png"
+        },
+        {
+            "page": 2,
+            "filename": "KR100292008B1_p2_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p2_img3.png"
+        },
+        {
+            "page": 2,
+            "filename": "KR100292008B1_p2_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p2_img4.png"
+        },
+        {
+            "page": 2,
+            "filename": "KR100292008B1_p2_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p2_img5.png"
+        },
+        {
+            "page": 2,
+            "filename": "KR100292008B1_p2_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p2_img6.png"
+        },
+        {
+            "page": 2,
+            "filename": "KR100292008B1_p2_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p2_img7.png"
+        },
+        {
+            "page": 2,
+            "filename": "KR100292008B1_p2_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p2_img8.png"
+        },
+        {
+            "page": 2,
+            "filename": "KR100292008B1_p2_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p2_img9.png"
+        },
+        {
+            "page": 2,
+            "filename": "KR100292008B1_p2_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p2_img10.png"
+        },
+        {
+            "page": 3,
+            "filename": "KR100292008B1_p3_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p3_img1.png"
+        },
+        {
+            "page": 3,
+            "filename": "KR100292008B1_p3_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p3_img2.png"
+        },
+        {
+            "page": 3,
+            "filename": "KR100292008B1_p3_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p3_img3.png"
+        },
+        {
+            "page": 3,
+            "filename": "KR100292008B1_p3_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p3_img4.png"
+        },
+        {
+            "page": 3,
+            "filename": "KR100292008B1_p3_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p3_img5.png"
+        },
+        {
+            "page": 3,
+            "filename": "KR100292008B1_p3_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p3_img6.png"
+        },
+        {
+            "page": 3,
+            "filename": "KR100292008B1_p3_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p3_img7.png"
+        },
+        {
+            "page": 3,
+            "filename": "KR100292008B1_p3_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p3_img8.png"
+        },
+        {
+            "page": 3,
+            "filename": "KR100292008B1_p3_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p3_img9.png"
+        },
+        {
+            "page": 3,
+            "filename": "KR100292008B1_p3_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p3_img10.png"
+        },
+        {
+            "page": 4,
+            "filename": "KR100292008B1_p4_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p4_img1.png"
+        },
+        {
+            "page": 4,
+            "filename": "KR100292008B1_p4_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p4_img2.png"
+        },
+        {
+            "page": 4,
+            "filename": "KR100292008B1_p4_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p4_img3.png"
+        },
+        {
+            "page": 4,
+            "filename": "KR100292008B1_p4_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p4_img4.png"
+        },
+        {
+            "page": 4,
+            "filename": "KR100292008B1_p4_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p4_img5.png"
+        },
+        {
+            "page": 4,
+            "filename": "KR100292008B1_p4_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p4_img6.png"
+        },
+        {
+            "page": 4,
+            "filename": "KR100292008B1_p4_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p4_img7.png"
+        },
+        {
+            "page": 4,
+            "filename": "KR100292008B1_p4_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p4_img8.png"
+        },
+        {
+            "page": 4,
+            "filename": "KR100292008B1_p4_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p4_img9.png"
+        },
+        {
+            "page": 4,
+            "filename": "KR100292008B1_p4_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p4_img10.png"
+        },
+        {
+            "page": 5,
+            "filename": "KR100292008B1_p5_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p5_img1.png"
+        },
+        {
+            "page": 5,
+            "filename": "KR100292008B1_p5_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p5_img2.png"
+        },
+        {
+            "page": 5,
+            "filename": "KR100292008B1_p5_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p5_img3.png"
+        },
+        {
+            "page": 5,
+            "filename": "KR100292008B1_p5_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p5_img4.png"
+        },
+        {
+            "page": 5,
+            "filename": "KR100292008B1_p5_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p5_img5.png"
+        },
+        {
+            "page": 5,
+            "filename": "KR100292008B1_p5_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p5_img6.png"
+        },
+        {
+            "page": 5,
+            "filename": "KR100292008B1_p5_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p5_img7.png"
+        },
+        {
+            "page": 5,
+            "filename": "KR100292008B1_p5_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p5_img8.png"
+        },
+        {
+            "page": 5,
+            "filename": "KR100292008B1_p5_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p5_img9.png"
+        },
+        {
+            "page": 5,
+            "filename": "KR100292008B1_p5_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p5_img10.png"
+        },
+        {
+            "page": 6,
+            "filename": "KR100292008B1_p6_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p6_img1.png"
+        },
+        {
+            "page": 6,
+            "filename": "KR100292008B1_p6_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p6_img2.png"
+        },
+        {
+            "page": 6,
+            "filename": "KR100292008B1_p6_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p6_img3.png"
+        },
+        {
+            "page": 6,
+            "filename": "KR100292008B1_p6_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p6_img4.png"
+        },
+        {
+            "page": 6,
+            "filename": "KR100292008B1_p6_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p6_img5.png"
+        },
+        {
+            "page": 6,
+            "filename": "KR100292008B1_p6_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p6_img6.png"
+        },
+        {
+            "page": 6,
+            "filename": "KR100292008B1_p6_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p6_img7.png"
+        },
+        {
+            "page": 6,
+            "filename": "KR100292008B1_p6_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p6_img8.png"
+        },
+        {
+            "page": 6,
+            "filename": "KR100292008B1_p6_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p6_img9.png"
+        },
+        {
+            "page": 6,
+            "filename": "KR100292008B1_p6_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p6_img10.png"
+        },
+        {
+            "page": 7,
+            "filename": "KR100292008B1_p7_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p7_img1.png"
+        },
+        {
+            "page": 7,
+            "filename": "KR100292008B1_p7_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p7_img2.png"
+        },
+        {
+            "page": 7,
+            "filename": "KR100292008B1_p7_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p7_img3.png"
+        },
+        {
+            "page": 7,
+            "filename": "KR100292008B1_p7_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p7_img4.png"
+        },
+        {
+            "page": 7,
+            "filename": "KR100292008B1_p7_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p7_img5.png"
+        },
+        {
+            "page": 7,
+            "filename": "KR100292008B1_p7_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p7_img6.png"
+        },
+        {
+            "page": 7,
+            "filename": "KR100292008B1_p7_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p7_img7.png"
+        },
+        {
+            "page": 7,
+            "filename": "KR100292008B1_p7_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p7_img8.png"
+        },
+        {
+            "page": 7,
+            "filename": "KR100292008B1_p7_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p7_img9.png"
+        },
+        {
+            "page": 7,
+            "filename": "KR100292008B1_p7_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p7_img10.png"
+        },
+        {
+            "page": 8,
+            "filename": "KR100292008B1_p8_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p8_img1.png"
+        },
+        {
+            "page": 8,
+            "filename": "KR100292008B1_p8_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p8_img2.png"
+        },
+        {
+            "page": 8,
+            "filename": "KR100292008B1_p8_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p8_img3.png"
+        },
+        {
+            "page": 8,
+            "filename": "KR100292008B1_p8_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p8_img4.png"
+        },
+        {
+            "page": 8,
+            "filename": "KR100292008B1_p8_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p8_img5.png"
+        },
+        {
+            "page": 8,
+            "filename": "KR100292008B1_p8_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p8_img6.png"
+        },
+        {
+            "page": 8,
+            "filename": "KR100292008B1_p8_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p8_img7.png"
+        },
+        {
+            "page": 8,
+            "filename": "KR100292008B1_p8_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p8_img8.png"
+        },
+        {
+            "page": 8,
+            "filename": "KR100292008B1_p8_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p8_img9.png"
+        },
+        {
+            "page": 8,
+            "filename": "KR100292008B1_p8_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p8_img10.png"
+        },
+        {
+            "page": 9,
+            "filename": "KR100292008B1_p9_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p9_img1.png"
+        },
+        {
+            "page": 9,
+            "filename": "KR100292008B1_p9_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p9_img2.png"
+        },
+        {
+            "page": 9,
+            "filename": "KR100292008B1_p9_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p9_img3.png"
+        },
+        {
+            "page": 9,
+            "filename": "KR100292008B1_p9_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p9_img4.png"
+        },
+        {
+            "page": 9,
+            "filename": "KR100292008B1_p9_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p9_img5.png"
+        },
+        {
+            "page": 9,
+            "filename": "KR100292008B1_p9_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p9_img6.png"
+        },
+        {
+            "page": 9,
+            "filename": "KR100292008B1_p9_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p9_img7.png"
+        },
+        {
+            "page": 9,
+            "filename": "KR100292008B1_p9_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p9_img8.png"
+        },
+        {
+            "page": 9,
+            "filename": "KR100292008B1_p9_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p9_img9.png"
+        },
+        {
+            "page": 9,
+            "filename": "KR100292008B1_p9_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p9_img10.png"
+        },
+        {
+            "page": 10,
+            "filename": "KR100292008B1_p10_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p10_img1.png"
+        },
+        {
+            "page": 10,
+            "filename": "KR100292008B1_p10_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p10_img2.png"
+        },
+        {
+            "page": 10,
+            "filename": "KR100292008B1_p10_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p10_img3.png"
+        },
+        {
+            "page": 10,
+            "filename": "KR100292008B1_p10_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p10_img4.png"
+        },
+        {
+            "page": 10,
+            "filename": "KR100292008B1_p10_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p10_img5.png"
+        },
+        {
+            "page": 10,
+            "filename": "KR100292008B1_p10_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p10_img6.png"
+        },
+        {
+            "page": 10,
+            "filename": "KR100292008B1_p10_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p10_img7.png"
+        },
+        {
+            "page": 10,
+            "filename": "KR100292008B1_p10_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p10_img8.png"
+        },
+        {
+            "page": 10,
+            "filename": "KR100292008B1_p10_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p10_img9.png"
+        },
+        {
+            "page": 10,
+            "filename": "KR100292008B1_p10_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p10_img10.png"
+        },
+        {
+            "page": 11,
+            "filename": "KR100292008B1_p11_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p11_img1.png"
+        },
+        {
+            "page": 11,
+            "filename": "KR100292008B1_p11_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p11_img2.png"
+        },
+        {
+            "page": 11,
+            "filename": "KR100292008B1_p11_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p11_img3.png"
+        },
+        {
+            "page": 11,
+            "filename": "KR100292008B1_p11_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p11_img4.png"
+        },
+        {
+            "page": 11,
+            "filename": "KR100292008B1_p11_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p11_img5.png"
+        },
+        {
+            "page": 11,
+            "filename": "KR100292008B1_p11_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p11_img6.png"
+        },
+        {
+            "page": 11,
+            "filename": "KR100292008B1_p11_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p11_img7.png"
+        },
+        {
+            "page": 11,
+            "filename": "KR100292008B1_p11_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p11_img8.png"
+        },
+        {
+            "page": 11,
+            "filename": "KR100292008B1_p11_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p11_img9.png"
+        },
+        {
+            "page": 11,
+            "filename": "KR100292008B1_p11_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p11_img10.png"
+        },
+        {
+            "page": 12,
+            "filename": "KR100292008B1_p12_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p12_img1.png"
+        },
+        {
+            "page": 12,
+            "filename": "KR100292008B1_p12_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p12_img2.png"
+        },
+        {
+            "page": 12,
+            "filename": "KR100292008B1_p12_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p12_img3.png"
+        },
+        {
+            "page": 12,
+            "filename": "KR100292008B1_p12_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p12_img4.png"
+        },
+        {
+            "page": 12,
+            "filename": "KR100292008B1_p12_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p12_img5.png"
+        },
+        {
+            "page": 12,
+            "filename": "KR100292008B1_p12_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p12_img6.png"
+        },
+        {
+            "page": 12,
+            "filename": "KR100292008B1_p12_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p12_img7.png"
+        },
+        {
+            "page": 12,
+            "filename": "KR100292008B1_p12_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p12_img8.png"
+        },
+        {
+            "page": 12,
+            "filename": "KR100292008B1_p12_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p12_img9.png"
+        },
+        {
+            "page": 12,
+            "filename": "KR100292008B1_p12_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p12_img10.png"
+        },
+        {
+            "page": 13,
+            "filename": "KR100292008B1_p13_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p13_img1.png"
+        },
+        {
+            "page": 13,
+            "filename": "KR100292008B1_p13_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p13_img2.png"
+        },
+        {
+            "page": 13,
+            "filename": "KR100292008B1_p13_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p13_img3.png"
+        },
+        {
+            "page": 13,
+            "filename": "KR100292008B1_p13_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p13_img4.png"
+        },
+        {
+            "page": 13,
+            "filename": "KR100292008B1_p13_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p13_img5.png"
+        },
+        {
+            "page": 13,
+            "filename": "KR100292008B1_p13_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p13_img6.png"
+        },
+        {
+            "page": 13,
+            "filename": "KR100292008B1_p13_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p13_img7.png"
+        },
+        {
+            "page": 13,
+            "filename": "KR100292008B1_p13_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p13_img8.png"
+        },
+        {
+            "page": 13,
+            "filename": "KR100292008B1_p13_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p13_img9.png"
+        },
+        {
+            "page": 13,
+            "filename": "KR100292008B1_p13_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p13_img10.png"
+        },
+        {
+            "page": 14,
+            "filename": "KR100292008B1_p14_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p14_img1.png"
+        },
+        {
+            "page": 14,
+            "filename": "KR100292008B1_p14_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p14_img2.png"
+        },
+        {
+            "page": 14,
+            "filename": "KR100292008B1_p14_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p14_img3.png"
+        },
+        {
+            "page": 14,
+            "filename": "KR100292008B1_p14_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p14_img4.png"
+        },
+        {
+            "page": 14,
+            "filename": "KR100292008B1_p14_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p14_img5.png"
+        },
+        {
+            "page": 14,
+            "filename": "KR100292008B1_p14_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p14_img6.png"
+        },
+        {
+            "page": 14,
+            "filename": "KR100292008B1_p14_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p14_img7.png"
+        },
+        {
+            "page": 14,
+            "filename": "KR100292008B1_p14_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p14_img8.png"
+        },
+        {
+            "page": 14,
+            "filename": "KR100292008B1_p14_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p14_img9.png"
+        },
+        {
+            "page": 14,
+            "filename": "KR100292008B1_p14_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p14_img10.png"
+        },
+        {
+            "page": 15,
+            "filename": "KR100292008B1_p15_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p15_img1.png"
+        },
+        {
+            "page": 15,
+            "filename": "KR100292008B1_p15_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p15_img2.png"
+        },
+        {
+            "page": 15,
+            "filename": "KR100292008B1_p15_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p15_img3.png"
+        },
+        {
+            "page": 15,
+            "filename": "KR100292008B1_p15_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p15_img4.png"
+        },
+        {
+            "page": 15,
+            "filename": "KR100292008B1_p15_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p15_img5.png"
+        },
+        {
+            "page": 15,
+            "filename": "KR100292008B1_p15_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p15_img6.png"
+        },
+        {
+            "page": 15,
+            "filename": "KR100292008B1_p15_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p15_img7.png"
+        },
+        {
+            "page": 15,
+            "filename": "KR100292008B1_p15_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p15_img8.png"
+        },
+        {
+            "page": 15,
+            "filename": "KR100292008B1_p15_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p15_img9.png"
+        },
+        {
+            "page": 15,
+            "filename": "KR100292008B1_p15_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p15_img10.png"
+        },
+        {
+            "page": 16,
+            "filename": "KR100292008B1_p16_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p16_img1.png"
+        },
+        {
+            "page": 16,
+            "filename": "KR100292008B1_p16_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p16_img2.png"
+        },
+        {
+            "page": 16,
+            "filename": "KR100292008B1_p16_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p16_img3.png"
+        },
+        {
+            "page": 16,
+            "filename": "KR100292008B1_p16_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p16_img4.png"
+        },
+        {
+            "page": 16,
+            "filename": "KR100292008B1_p16_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p16_img5.png"
+        },
+        {
+            "page": 16,
+            "filename": "KR100292008B1_p16_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p16_img6.png"
+        },
+        {
+            "page": 16,
+            "filename": "KR100292008B1_p16_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p16_img7.png"
+        },
+        {
+            "page": 16,
+            "filename": "KR100292008B1_p16_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p16_img8.png"
+        },
+        {
+            "page": 16,
+            "filename": "KR100292008B1_p16_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p16_img9.png"
+        },
+        {
+            "page": 16,
+            "filename": "KR100292008B1_p16_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p16_img10.png"
+        },
+        {
+            "page": 17,
+            "filename": "KR100292008B1_p17_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p17_img1.png"
+        },
+        {
+            "page": 17,
+            "filename": "KR100292008B1_p17_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p17_img2.png"
+        },
+        {
+            "page": 17,
+            "filename": "KR100292008B1_p17_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p17_img3.png"
+        },
+        {
+            "page": 17,
+            "filename": "KR100292008B1_p17_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p17_img4.png"
+        },
+        {
+            "page": 17,
+            "filename": "KR100292008B1_p17_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p17_img5.png"
+        },
+        {
+            "page": 17,
+            "filename": "KR100292008B1_p17_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p17_img6.png"
+        },
+        {
+            "page": 17,
+            "filename": "KR100292008B1_p17_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p17_img7.png"
+        },
+        {
+            "page": 17,
+            "filename": "KR100292008B1_p17_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p17_img8.png"
+        },
+        {
+            "page": 17,
+            "filename": "KR100292008B1_p17_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p17_img9.png"
+        },
+        {
+            "page": 17,
+            "filename": "KR100292008B1_p17_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p17_img10.png"
+        },
+        {
+            "page": 18,
+            "filename": "KR100292008B1_p18_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p18_img1.png"
+        },
+        {
+            "page": 18,
+            "filename": "KR100292008B1_p18_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p18_img2.png"
+        },
+        {
+            "page": 18,
+            "filename": "KR100292008B1_p18_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p18_img3.png"
+        },
+        {
+            "page": 18,
+            "filename": "KR100292008B1_p18_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p18_img4.png"
+        },
+        {
+            "page": 18,
+            "filename": "KR100292008B1_p18_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p18_img5.png"
+        },
+        {
+            "page": 18,
+            "filename": "KR100292008B1_p18_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p18_img6.png"
+        },
+        {
+            "page": 18,
+            "filename": "KR100292008B1_p18_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p18_img7.png"
+        },
+        {
+            "page": 18,
+            "filename": "KR100292008B1_p18_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p18_img8.png"
+        },
+        {
+            "page": 18,
+            "filename": "KR100292008B1_p18_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p18_img9.png"
+        },
+        {
+            "page": 18,
+            "filename": "KR100292008B1_p18_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p18_img10.png"
+        },
+        {
+            "page": 19,
+            "filename": "KR100292008B1_p19_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p19_img1.png"
+        },
+        {
+            "page": 19,
+            "filename": "KR100292008B1_p19_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p19_img2.png"
+        },
+        {
+            "page": 19,
+            "filename": "KR100292008B1_p19_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p19_img3.png"
+        },
+        {
+            "page": 19,
+            "filename": "KR100292008B1_p19_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p19_img4.png"
+        },
+        {
+            "page": 19,
+            "filename": "KR100292008B1_p19_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p19_img5.png"
+        },
+        {
+            "page": 19,
+            "filename": "KR100292008B1_p19_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p19_img6.png"
+        },
+        {
+            "page": 19,
+            "filename": "KR100292008B1_p19_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p19_img7.png"
+        },
+        {
+            "page": 19,
+            "filename": "KR100292008B1_p19_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p19_img8.png"
+        },
+        {
+            "page": 19,
+            "filename": "KR100292008B1_p19_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p19_img9.png"
+        },
+        {
+            "page": 19,
+            "filename": "KR100292008B1_p19_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p19_img10.png"
+        },
+        {
+            "page": 20,
+            "filename": "KR100292008B1_p20_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p20_img1.png"
+        },
+        {
+            "page": 20,
+            "filename": "KR100292008B1_p20_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p20_img2.png"
+        },
+        {
+            "page": 20,
+            "filename": "KR100292008B1_p20_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p20_img3.png"
+        },
+        {
+            "page": 20,
+            "filename": "KR100292008B1_p20_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p20_img4.png"
+        },
+        {
+            "page": 20,
+            "filename": "KR100292008B1_p20_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p20_img5.png"
+        },
+        {
+            "page": 20,
+            "filename": "KR100292008B1_p20_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p20_img6.png"
+        },
+        {
+            "page": 20,
+            "filename": "KR100292008B1_p20_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p20_img7.png"
+        },
+        {
+            "page": 20,
+            "filename": "KR100292008B1_p20_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p20_img8.png"
+        },
+        {
+            "page": 20,
+            "filename": "KR100292008B1_p20_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p20_img9.png"
+        },
+        {
+            "page": 20,
+            "filename": "KR100292008B1_p20_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p20_img10.png"
+        },
+        {
+            "page": 21,
+            "filename": "KR100292008B1_p21_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p21_img1.png"
+        },
+        {
+            "page": 21,
+            "filename": "KR100292008B1_p21_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p21_img2.png"
+        },
+        {
+            "page": 21,
+            "filename": "KR100292008B1_p21_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p21_img3.png"
+        },
+        {
+            "page": 21,
+            "filename": "KR100292008B1_p21_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p21_img4.png"
+        },
+        {
+            "page": 21,
+            "filename": "KR100292008B1_p21_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p21_img5.png"
+        },
+        {
+            "page": 21,
+            "filename": "KR100292008B1_p21_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p21_img6.png"
+        },
+        {
+            "page": 21,
+            "filename": "KR100292008B1_p21_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p21_img7.png"
+        },
+        {
+            "page": 21,
+            "filename": "KR100292008B1_p21_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p21_img8.png"
+        },
+        {
+            "page": 21,
+            "filename": "KR100292008B1_p21_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p21_img9.png"
+        },
+        {
+            "page": 21,
+            "filename": "KR100292008B1_p21_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p21_img10.png"
+        },
+        {
+            "page": 22,
+            "filename": "KR100292008B1_p22_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p22_img1.png"
+        },
+        {
+            "page": 22,
+            "filename": "KR100292008B1_p22_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p22_img2.png"
+        },
+        {
+            "page": 22,
+            "filename": "KR100292008B1_p22_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p22_img3.png"
+        },
+        {
+            "page": 22,
+            "filename": "KR100292008B1_p22_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p22_img4.png"
+        },
+        {
+            "page": 22,
+            "filename": "KR100292008B1_p22_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p22_img5.png"
+        },
+        {
+            "page": 22,
+            "filename": "KR100292008B1_p22_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p22_img6.png"
+        },
+        {
+            "page": 22,
+            "filename": "KR100292008B1_p22_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p22_img7.png"
+        },
+        {
+            "page": 22,
+            "filename": "KR100292008B1_p22_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p22_img8.png"
+        },
+        {
+            "page": 22,
+            "filename": "KR100292008B1_p22_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p22_img9.png"
+        },
+        {
+            "page": 22,
+            "filename": "KR100292008B1_p22_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p22_img10.png"
+        },
+        {
+            "page": 23,
+            "filename": "KR100292008B1_p23_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p23_img1.png"
+        },
+        {
+            "page": 23,
+            "filename": "KR100292008B1_p23_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p23_img2.png"
+        },
+        {
+            "page": 23,
+            "filename": "KR100292008B1_p23_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p23_img3.png"
+        },
+        {
+            "page": 23,
+            "filename": "KR100292008B1_p23_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p23_img4.png"
+        },
+        {
+            "page": 23,
+            "filename": "KR100292008B1_p23_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p23_img5.png"
+        },
+        {
+            "page": 23,
+            "filename": "KR100292008B1_p23_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p23_img6.png"
+        },
+        {
+            "page": 23,
+            "filename": "KR100292008B1_p23_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p23_img7.png"
+        },
+        {
+            "page": 23,
+            "filename": "KR100292008B1_p23_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p23_img8.png"
+        },
+        {
+            "page": 23,
+            "filename": "KR100292008B1_p23_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p23_img9.png"
+        },
+        {
+            "page": 23,
+            "filename": "KR100292008B1_p23_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p23_img10.png"
+        },
+        {
+            "page": 24,
+            "filename": "KR100292008B1_p24_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p24_img1.png"
+        },
+        {
+            "page": 24,
+            "filename": "KR100292008B1_p24_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p24_img2.png"
+        },
+        {
+            "page": 24,
+            "filename": "KR100292008B1_p24_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p24_img3.png"
+        },
+        {
+            "page": 24,
+            "filename": "KR100292008B1_p24_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p24_img4.png"
+        },
+        {
+            "page": 24,
+            "filename": "KR100292008B1_p24_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p24_img5.png"
+        },
+        {
+            "page": 24,
+            "filename": "KR100292008B1_p24_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p24_img6.png"
+        },
+        {
+            "page": 24,
+            "filename": "KR100292008B1_p24_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p24_img7.png"
+        },
+        {
+            "page": 24,
+            "filename": "KR100292008B1_p24_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p24_img8.png"
+        },
+        {
+            "page": 24,
+            "filename": "KR100292008B1_p24_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p24_img9.png"
+        },
+        {
+            "page": 24,
+            "filename": "KR100292008B1_p24_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p24_img10.png"
+        },
+        {
+            "page": 25,
+            "filename": "KR100292008B1_p25_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p25_img1.png"
+        },
+        {
+            "page": 25,
+            "filename": "KR100292008B1_p25_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p25_img2.png"
+        },
+        {
+            "page": 25,
+            "filename": "KR100292008B1_p25_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p25_img3.png"
+        },
+        {
+            "page": 25,
+            "filename": "KR100292008B1_p25_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p25_img4.png"
+        },
+        {
+            "page": 25,
+            "filename": "KR100292008B1_p25_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p25_img5.png"
+        },
+        {
+            "page": 25,
+            "filename": "KR100292008B1_p25_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p25_img6.png"
+        },
+        {
+            "page": 25,
+            "filename": "KR100292008B1_p25_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p25_img7.png"
+        },
+        {
+            "page": 25,
+            "filename": "KR100292008B1_p25_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p25_img8.png"
+        },
+        {
+            "page": 25,
+            "filename": "KR100292008B1_p25_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p25_img9.png"
+        },
+        {
+            "page": 25,
+            "filename": "KR100292008B1_p25_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p25_img10.png"
+        },
+        {
+            "page": 26,
+            "filename": "KR100292008B1_p26_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p26_img1.png"
+        },
+        {
+            "page": 26,
+            "filename": "KR100292008B1_p26_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p26_img2.png"
+        },
+        {
+            "page": 26,
+            "filename": "KR100292008B1_p26_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p26_img3.png"
+        },
+        {
+            "page": 26,
+            "filename": "KR100292008B1_p26_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p26_img4.png"
+        },
+        {
+            "page": 26,
+            "filename": "KR100292008B1_p26_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p26_img5.png"
+        },
+        {
+            "page": 26,
+            "filename": "KR100292008B1_p26_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p26_img6.png"
+        },
+        {
+            "page": 26,
+            "filename": "KR100292008B1_p26_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p26_img7.png"
+        },
+        {
+            "page": 26,
+            "filename": "KR100292008B1_p26_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p26_img8.png"
+        },
+        {
+            "page": 26,
+            "filename": "KR100292008B1_p26_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p26_img9.png"
+        },
+        {
+            "page": 26,
+            "filename": "KR100292008B1_p26_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p26_img10.png"
+        },
+        {
+            "page": 27,
+            "filename": "KR100292008B1_p27_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p27_img1.png"
+        },
+        {
+            "page": 27,
+            "filename": "KR100292008B1_p27_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p27_img2.png"
+        },
+        {
+            "page": 27,
+            "filename": "KR100292008B1_p27_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p27_img3.png"
+        },
+        {
+            "page": 27,
+            "filename": "KR100292008B1_p27_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p27_img4.png"
+        },
+        {
+            "page": 27,
+            "filename": "KR100292008B1_p27_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p27_img5.png"
+        },
+        {
+            "page": 27,
+            "filename": "KR100292008B1_p27_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p27_img6.png"
+        },
+        {
+            "page": 27,
+            "filename": "KR100292008B1_p27_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p27_img7.png"
+        },
+        {
+            "page": 27,
+            "filename": "KR100292008B1_p27_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p27_img8.png"
+        },
+        {
+            "page": 27,
+            "filename": "KR100292008B1_p27_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p27_img9.png"
+        },
+        {
+            "page": 27,
+            "filename": "KR100292008B1_p27_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p27_img10.png"
+        },
+        {
+            "page": 28,
+            "filename": "KR100292008B1_p28_img1.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p28_img1.png"
+        },
+        {
+            "page": 28,
+            "filename": "KR100292008B1_p28_img2.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p28_img2.png"
+        },
+        {
+            "page": 28,
+            "filename": "KR100292008B1_p28_img3.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p28_img3.png"
+        },
+        {
+            "page": 28,
+            "filename": "KR100292008B1_p28_img4.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p28_img4.png"
+        },
+        {
+            "page": 28,
+            "filename": "KR100292008B1_p28_img5.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p28_img5.png"
+        },
+        {
+            "page": 28,
+            "filename": "KR100292008B1_p28_img6.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p28_img6.png"
+        },
+        {
+            "page": 28,
+            "filename": "KR100292008B1_p28_img7.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p28_img7.png"
+        },
+        {
+            "page": 28,
+            "filename": "KR100292008B1_p28_img8.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p28_img8.png"
+        },
+        {
+            "page": 28,
+            "filename": "KR100292008B1_p28_img9.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p28_img9.png"
+        },
+        {
+            "page": 28,
+            "filename": "KR100292008B1_p28_img10.png",
+            "width": 1023,
+            "height": 767,
+            "path": "data/extracted_figures\\KR100292008B1_p28_img10.png"
+        }
+    ],
+    "tables_raw": [],
+    "equations_detected": [],
+    "claims_structured": {
+        "청구항 1": ".\n \n무선통신 시스템에 있어서, 일이상의 원격국으로/으로부터 신호를 송신 및 수신하기 위한 복수의 기지국으로서, 상기 \n일이상의 원격국은 상기 복수의 기지국 중의 일이상의 가까운 가시거리( line- of- sight) 내에 있으며, 상기 복수의 기\n지국의 각각은 기지국 수신기에 연결된 수신 안테나를 일이상 포함하며, 상기 일이상의 수신 안테나는 수평면에서 지향\n성 패턴을 가지며 상기 지향성 패턴이 하나의 방위 위치에서 다른 방위 위치로 계속해서 스캔하도록 조정하는 수단을 \n가지는, 복수의 기지국; 상기 일이상의 수신 안테나에서 수신된 신호를 필터링하는 수단; 상기 필터링 수단에 의해 필터\n링한 뒤 상기 수신된 신호를 처리하는 수단; 상기 수신된 신호의 신호강도를 검출하는 수단; 및 상기 조정수단을 제어하\n는 수단을 포함하며, 상기 제어수단은 상기 조정수단을 중지하도록 명령하는 수단 및, 더이상의 스캐닝을 하지 않은채 \n상기 수신된 신호의 상기 신호강도가 소정 임계값 이상이 되는 방위 위치에서 상기 수신 신호를 수신하도록 상기 일이\n상의 수신 안테나에게 명령하는 수단을 포함하는 것을 특징으로 하는 무선통신 시스템.",
+        "청구항 2": ".\n제1항에 있어서, 상기 조정 수단을 제어하기 위한 상기 수단은 상기 수신된 신호의 신호강도의 함수로써 상기 지향성 \n패턴의 스캐닝을 제어하기 위한 수단을 포함하는 것을 특징으로 하는 무선통신시스템.",
+        "청구항 3": ".\n \n- 13 -\n\n등록특허 10- 0292008\n \n제1항에 있어서, 상기 일 또는 그 이상의 원격국을 더 포함하고, 소정의 원격국은 상기 기지국 수신기에 의해 모니터링\n된 주파수 대역내에서 식별 신호패턴 및 메세지 정보를 송신하기 위한 수단을 각각 포함하는 것을 특징으로 하는 무선\n통신시스템.",
+        "청구항 4": ".\n제3항에 있어서, 상기 원격국의 상기 송신수단은 발신지 주소, 수신지 주소, 메세지, 및 에러정정정보를 포함하는 상기 \n메세지 정보를 표현하기 위한 수단을 더 포함하며, 상기 메세지 정보 모두는 상기 식별신호패턴의 송신에 뒤이어 송신\n되는 것을 특징으로 하는 무선통신시스템.",
+        "청구항 5": ".\n제3항에 있어서, 상기 처리수단은 상기 수신된 신호에 포함되는 정보를 디코딩 하기 위한 수단을 포함하는 것을 특징으\n로 하는 무선통신시스템.",
+        "청구항 6": ".\n제5항에 있어서, 상기 조정 수단을 제어하기 위한 수단은 상기 검출수단에 의해 판단된 수신된 신호강도가 상기 소정의 \n임계값보다 더 큰지를 판단하기 위한 수단; 및 상기 수신된 신호강도가 상기 소정의 임계값보다 더 크지 않다면 상기 조\n정수단이 상기 지향성 패턴을 한 방위 위치에서 다른 방위 위치로 이동시키도록 명령하기 위한 수단을 포함하는 것을 \n특징으로 하는 무선통신시스템.",
+        "청구항 7": ".\n제6항에 있어서, 상기 임계값은 예상되는 백그라운드 잡음레벨보다 사실상 더 높은 신호레벨로 구성되는 것을 특징으로 \n하는 무선통신시스템.",
+        "청구항 8": ".\n \n제5항에 있어서, 상기 디코딩 수단은 상기 식별신호패턴을 디코딩하기 위한 수단을 포함하며, 상기 시스템은 상기 식별\n신호패턴이 정확하게 디코딩되어졌는지를 판단하기 위한 수단; 및 상기 식별신호패턴이 정확하게 디코딩되어졌다는 것\n으로 상기 판단수단에 의해 판단된다면, 상기 수신된 신호의 나머지부를 디코딩하고 대응 메세지를 망으로 발송하기 위\n한 수단을 포함하며, 상기 조정 수단을 제어하기 위한 수단은 상기 식별신호패턴이 정확하게 디코딩되어 지지 않았다면, \n상기 스캐닝 수단이 상기 지향성 패턴을 한 방위 위치에서 다른 방위 위치로 이동시키도록 명령하기 위한 수단을 더 포\n함하는 것을 특징으로 하는 무선통신시스템.",
+        "청구항 9": ".\n제1항에 있어서, 상기 일이상의 수신안테나는 공선상 쌍극 안테나의 어레이로 구성되는 것을 특징으로 하는 무선통신시\n스템.",
+        "청구항 10": ".\n제1항에 있어서, 상기 무선통신시스템은 마이크로셀룰러 통신망으로 구성되는 것을 특징으로 하는 무선통신시스템.",
+        "청구항 11": ".\n제1항에 있어서, 상기 무선통신시스템은 무선 데이타망으로 구성되는 것을 특징으로 하는 무선통신시스템.\n \n- 14 -\n\n등록특허 10- 0292008",
+        "청구항 12": ".\n제1항에 있어서, 상기 무선통신시스템은 응답확인 페이징 시스템으로 구성되는 것을 특징으로 하는 무선통신시스템.",
+        "청구항 13": ".\n제1항에 있어서, 상기 시스템은 상기 기지국에 접속되고, 원격통신 교환망에 접속된 망 제어센터를 더 포함하는 것을 \n특징으로 하는 무선통신시스템.",
+        "청구항 14": ".\n제1항에 있어서, 각각의 상기 원격국은 4W 미만의 효과적인 등방성 방사전력을 가진 신호를 송신하는 송신기를 포함하\n는 것을 특징으로 하는 무선통신시스템.",
+        "청구항 15": ".\n제1항에 있어서, 각각의 상기 원격국은 2W 미만의 효과적인 등방성 방사전력을 가진 신호를 송신하는 송신기를 포함하\n는 것을 특징으로 하는 무선통신시스템.",
+        "청구항 16": ".\n제1항에 있어서, 상기 지향성 패턴은 30° 미만의 방위평면에서 및 30° 미만의 엘리베이션 평면에서의 반전력 빔폭으\n로 구성되는 것을 특징으로 하는 무선통신시스템.",
+        "청구항 17": ".\n제1항에 있어서, 상기 지향성 패턴은 6° 미만의 방위평면에서 및 8° 미만의 엘리베이션 평면에서의 반전력 빔폭으로 \n구성되는 것을 특징으로 하는 무선통신시스템.",
+        "청구항 18": ".\n제1항에 있어서, 상기 일이상의 수신안테나는 다수의 개별 안테나를 포함하며, 각각의 상기 개별 안테나는 360° 의 일\n부분과 동일한 범위에 결쳐 방위상으로 지향성 빔을 스캐닝하기 위한 수단을 포함하며, 상기 개별 안테나는 상기 개별 \n안테나에 의해 스캐닝된 전체영역이 360° 인 것으로 배열되는 것을 특징으로 하는 무선통신 시스템.",
+        "청구항 19": ".\n제1항에 있어서, 그 일부가 수신기, 및 공통 주파수 채널을 공유하는 대응 스캐닝된 기지국 수신안테나를 포함하는 다\n수의 기지국, 및 공통주파수 채널을 공유하는 상기 기지국 수신안테나의 스캐닝을 동기화하기 위한 수단을 더 포함하는 \n것을 특징으로 하는 무선통신시스템.",
+        "청구항 20": ".\n제1항에 있어서, 각각의 상기 원격국은 상기 기지국으로 신호를 송신하고 그로부터 신호를 수신하기 위해, 송신기 및 \n수신기에 결합된 전지향성 안테나를 포함하는 것을 특징으로 하는 무선통신시스템.",
+        "청구항 21": ".\n제1항에 있어서, 상기 기지국은 전지향성 송신안테나를 포함하는 것을 특징으로 하는 무선통신시스템.\n \n- 15 -\n\n등록특허 10- 0292008",
+        "청구항 22": ".\n \n통신방법에 있어서, 일이상의 원격국으로/으로부터 신호를 송신 및 수신하기 위한 복수의 기지국을 동작시키는 단계로\n서, 상기 일이상의 원격국은 상기 복수의 기지국 중의 일이상의 가까운 가시거리( line- of- sight) 내에 있으며, 상기 방\n법은 상기 기지국 각각의 수신기에 연결된 일이상의 수신 안테나가 하나의 방위 위치에서 다른 방위 위치로 계속해서 \n스캔하도록 조정하는 단계를 포함하며, 상기 일이상의 수신 안테나는 수평면에서 지향성 패턴을 가지는, 기지국을 동작\n시키는 단계; 상기 일이상의 수신 안테나에서 수신된 신호를 필터링하는 단계; 상기 필터링 이후 상기 수신된 신호를 처\n리하는 단계; 상기 수신된 신호의 신호강도를 모니터링하는 단계; 및 상기 조정을 제어하는 단계를 포함하며, 상기 제어\n하는 단계는 상기 조정수단을 중지하도록 명령하는 단계를 포함하며, 더이상의 스캐닝을 하지 않은채, 방위 위치에서 \n수신된 상기 신호의 상기 신호강도가 소정 임계값 이상이 되는 상기 방위 위치에서 상기 수신신호를 수신하도록 상기 \n일이상의 수신 안테나를 제어하는 것을 특징으로 하는 통신방법.",
+        "청구항 23": ".\n제22항에 있어서, 상기 조정을 제어하는 단계는 상기 수신된 신호의 신호강도의 함수로써 상기 지향성 패턴의 스캐닝을 \n제어하는 단계를 더 포함하는 것을 특징으로 하는 통신방법.",
+        "청구항 24": ".\n제22항에 있어서, 상기 기지국을 동작시키는 단계 이후, 상기 기지국 수신기에 의해 모니터링된 주파수 대역내에서 식\n별 신호패턴 및 메세지 정보를 송신하도록 상기 원격국중 선택된 원격국을 동작시키는 단계를 더 포함하는 것을 특징으\n로 하는 통신방법.",
+        "청구항 25": ".\n제24항에 있어서, 상기 원격국을 동작시키는 단계는 발신지 주소, 수신지 주소, 메세지, 및 에러정정 정보를 포함하는 \n상기 메세지 정보를 표현하도록 상기 원격국중 선택된 원격국을 동작시키는 단계를 더 포함하며, 상기 메세지 정보 모\n두는 상기 식별신호패턴의 송신에 뒤이어 송신되는 것을 특징으로 하는 통신방법.",
+        "청구항 26": ".\n제24항에 있어서, 상기 처리하는 단계는 상기 수신된 신호에 포함되는 정보를 디코딩하는 단계를 포함하는 것을 특징으\n로 하는 통신방법.",
+        "청구항 27": ".\n제26항에 있어서, 상기 조정을 제어하는 단계는, 상기 수신된 신호강도가 상기 소정의 임계값보다 더 큰지를 판단하는 \n단계; 및 상기 수신된 신호강도가 상기 소정의 임계값보다 더 크지 않다면 상기 지향성 패턴을 한 방위 위치에서 다른 \n방위 위치로 이동시키도록 상기 조정하는 단계를 제어하는 단계를 포함하는 것을 특징으로 하는 통신방법.",
+        "청구항 28": ".\n제27항에 있어서, 상기 소정 임계값은 기대되는 백그라운드 잡음레벨보다 사실상 더 높은 신호레벨로 구성되는 것을 특\n징으로 하는 통신방법.",
+        "청구항 29": ".\n \n \n- 16 -\n\n등록특허 10- 0292008\n \n제26항에 있어서, 상기 디코딩하는 단계는 상기 식별신호패턴을 디코딩하는 단계를 포함하며, 상기 통신방법은 상기 식\n별신호패턴이 정확하게 디코딩되어졌는지를 판단하는 단계; 상기 판단하는 단계동안 상기 식별신호패턴이 정확하게 디\n코딩되어졌다는 것으로 판단된다면, 상기 수신된 신호의 나머지부를 디코딩하고 대응 메세지를 망으로 발송하는 단계, \n상기 식별신호패턴이 정확하게 디코딩되어지지 않았다면, 상기 지향성 패턴을 한 방위 위치에서 다른 방위 위치로 이동\n시키도록 상기 조정하는 단계를 제어하는 단계를 더 포함하는 것을 특징으로 하는 통신방법.",
+        "청구항 30": ".\n제22항에 있어서, 상기 일이상의 수신 안테나는 공선상 쌍극 안테나의 어레이로 구성되는 것을 특징으로 하는 통신방법.",
+        "청구항 31": ".\n제22항에 있어서, 상기 통신방법은 마이크로셀룰러 통신망을 이용하는 것을 특징으로 하는 통신방법.",
+        "청구항 32": ".\n제22항에 있어서, 상기 통신방법은 무선 데이타망을 이용하는 것을 특징으로 하는 통신방법.",
+        "청구항 33": ".\n제22항에 있어서, 상기 통신방법은 응답확인 페이징 시스템을 이용하는 것을 특징으로 하는 통신방법.",
+        "청구항 34": ".\n제22항에 있어서, 상기 기지국에 접속되고, 원격통신 교환망에 접속된 망 제어센터를 동작시키는 단계를 더 포함하는 \n것을 특징으로 하는 통신방법.",
+        "청구항 35": ".\n제22항에 있어서, 각각의 상기 원격국은 4W 미만의 효과적인 등방성 방사전력을 가진 신호를 송신하는 송신기를 포함\n하는 것을 특징으로 하는 통신방법.",
+        "청구항 36": ".\n제22항에 있어서, 각각의 상기 원격국은 2W 미만의 효과적인 등방성 방사전력을 가진 신호를 송신하는 송신기를 포함\n하는 것을 특징으로 하는 통신방법.",
+        "청구항 37": ".\n제22항에 있어서, 상기 지향성 패턴은 30° 미만의 방위평면에서 및 30° 미만의 엘리베이션 평면에서의 반전력 빔폭으\n로 구성되는 것을 특징으로 하는 통신방법.",
+        "청구항 38": ".\n제22항에 있어서, 상기 지향성 패턴은 6° 미만의 방위평면에서 및 8° 미만의 엘리베이션 평면에서의 반전력 빔폭으로 \n구성되는 것을 특징으로 하는 통신방법.",
+        "청구항 39": ".\n \n- 17 -\n\n등록특허 10- 0292008\n \n제22항에 있어서, 상기 일이상의 수신안테나는 다수의 개별 안테나를 포함하며, 상기 스캐닝하는 단계는 360° 의 일부\n분과 동일한 범위에 결쳐 방위상으로 각각의 상기 개별 안테나의 지향성 빔을 스캐닝하는 단계를 포함하며, 상기 개별 \n안테나는 상기 개별 안테나에 의해 스캐닝된 전체영역이 360° 인 것으로 배열되는 것을 특징으로 하는 무선통신 시스\n템.",
+        "청구항 40": ".\n제22항에 있어서, 상기 복수의 기지국을 동작시키는 단계는, 그 일부가 수신기 및 공통 주파수 채널을 공유하는 대응 \n스캐닝된 기지국 수신안테나를 포함하는 다수의 기지국을 동작시키는 단계; 및 상기 공통 주파수 채널을 공유하는 상기 \n기지국 수신안테나의 스캐닝을 동기화하는 단계를 더 포함하는 것을 특징으로 하는 통신방법.",
+        "청구항 41": ".\n제22항에 있어서, 각각의 상기 원격국은 상기 기지국으로 신호를 송신하고 그로부터 신호를 수신하기 위해, 송신기 및 \n수신기에 결합된 전지향성 안테나를 포함하는 것을 특징으로 하는 통신방법.",
+        "청구항 42": ".\n제22항에 있어서, 상기 기지국은 전지향성 송신안테나를 포함하는 것을 특징으로 하는 통신방법.",
+        "청구항 43": ".\n제1항에 있어서, 상기 명령수단은 상기 수신된 신호의 신호강도가 상기 소정 임계 값 이상인 것을 검출될때까지 방위상\n으로 상기 지향성 패턴을 지속적으로 스캐닝하도록 상기 조정 수단에 명령하는 것을 특징으로 하는 무선통신 시스템.",
+        "청구항 44": ".\n \n제1항에 있어서, 상기 원격국중 선택된 원격국은 식별신호패턴을 포함하는 메세지 구조를 송신하기 위한 수단을 포함하\n고, 그리고 상기 처리수단은 상기 식별신호패턴을 디코딩하기 위한 수단을 포함하고, 상기 명령수단은 상기 수신된 신\n호의 신호강도가 상기 소정 임계값 이상인 것으로 검출된 이후일지라도, 상기식별신호패턴이 상기 디코딩 수단에 의해 \n정확하게 디코딩되어지지 않았다면, 상기 조정 수단에 상기 지향성 패턴의 스캐닝을 제개하도록 명령하는 것을 특징으\n로 하는 무선통신시스템.",
+        "청구항 45": ".\n제22항에 있어서, 상기 지시하는 단계는 상기 수신된 신호의 신호강도가 상기 소정 임계값 이상인 것으로 검출될때까지 \n방위상으로 상기 지향성 패턴을 지속적으로 스캐닝하도록 상기 조정수단에 명령하는 단계를 더 포함하는 것을 특징으\n로 하는 통신방법.",
+        "청구항 46": ".\n \n제22항에 있어서, 상기 기지국을 동작시키는 단계 이후 식별신호패턴을 포함하는 메세지 구조를 송신하도록 상기 원격\n국중 선택된 원격국을 동작시키는 단계를 더 포함하고, 상기 처리하는 단계는 상기 식별 신호패턴을 디코딩하는 단계를 \n포함하고, 상기 명령하는 단계는 상기 수신된 신호의 신호강도가 상기 소정 임계값 이상인 것으로 검출된 이후일지라도, \n상기 식별신호패턴 이 정확하게 디코딩되어지지 않았다면, 상기 스캐닝 수단에 상기 지향성 패턴의 스캐닝을 재개하도\n록 명령하는 단계를 포함하는 것을 특징으로 하는 통신방법.\n \n \n- 18 -\n\n등록특허 10- 0292008",
+        "청구항 47": ".\n \n무선통신 시스템에 있어서, 각각 수파수 대역에서 식별신호패턴 및 메시지 정보를 전송하는 수단을 포함하는 일이상의 \n원격국; 상기 원격국으로/으로부터 신호를 송신 및 수신하기 위한 기지국으로서, 상기 기지국은 상기 주파수 대역을 모\n니터하는 기지국에 연결된 일이상의 수신 안테나를 포함하며, 상기 일이상의 수신 안테나는 수평면에서 지향성 패턴 및 \n상기 지향성 패턴을 방위상으로스캐닝하는 수단을 포함하는 기지국; 상기 일이상의 수신 안테나에서 수신된 신호를 필\n터링하는 수단; 상기 필터링 수단에 의한 필터링 후에 상기 수신된 신호를 처리하는 수단으로서, 상기 수신된 신호에 포\n함된 정보를 디코딩하는 수단을 포함하는 처리수단; 상기 수신된 신호의 신호강도를 모니터링하는 수단; 및 상기 스캐\n닝 수단을 제어하는 수단을 포함하며, 상기 디코딩 수단은 상기 식별신호패턴을 디코딩하는 수단을 포함하며, 상기 시\n스템은, 상기 식별신호패턴이 정확히 디코드되었는지를 결정하는 수단; 및 상기 식별신호패턴이 정확히 디코드된 것으\n로 상기 결정수단에 의해 결정된다면, 상기 수신된 신호의 나머지 부분도 디코딩하고 대응하는 메세지를 망으로 보내는 \n수단을 더 포함하며, 상기 스캐닝 수단을 제어하는 상기 수단은, 상기 식별신호패턴이 정확히 디코드되지 않았다면, 상\n기 스캐닝 수단이 하나의 방위 위치에서 다른 위치로 상기 지향성 패턴을 이동시키도록 명령하는 수단을 더 포함하는 \n것을 특징으로 하는 무선통신 시스템.",
+        "청구항 48": ".\n \n통신방법에 있어서, 일이상의 원격국으로/으로부터 신호를 송신 및 수신하기 위해 기지국을 동작시키는 단계로서, 상기 \n방법은 상기 기지국의 수신기에 연결된 일이상의 수신 안테나가 방위상으로 스캐닝하는 단계를 포함하며, 상기 일이상\n의 수신 안테나는 수평면에서 지향성 패턴을 가지는, 기지국을 동작시키는 단계; 상기 기지국 수신기에 의해 모니터된 \n주파수 대역내에서, 상기 원격국중의 선택된 하나가 식별신호패턴 및 메시지 정보를 전송하도록 동작시키는 단계; 상기 \n일이상의 수신 안테나에서 수신된 신호를 필터링하는 단계; 필터링 후에 상기 수신된 신호를 처리하는 단계로서, 상기 \n수신된 신호에 포함된 정보를 디코딩하는 단계를 포함하는 처리단계; 상기 수신된 신호의 신호강도를 모니터링하는 단\n계; 및 상기 스캐닝을 제어하는 단계;를 포함하며, 상기 디코딩은 상기 식별신호패턴을 디코딩하는 단계를 포함하며, 상\n기 방법은, 상기 식별신호패턴이 정확히 디코드되었는지를 결정하는 단계; 상기 결정단계 동안 상기 식별신호패턴이 정\n확히 디코드된 것으로 결정된다면, 상기 수신된 신호의 나머지 부분도 디코딩하고 대응하는 메시지를 네트워크로 보내\n는 단계; 및 상기 식별신호패턴이 올바로 디코드되지 않았다면, 하나의 방위 위치에서 다른 위치로 상기 지향성 패턴을 \n이동시키도록 상기 스캐닝 수단을 제어하는 단계;를 더 포함하는 것을 특징으로 하는 통신방법.\n \n도면\n \n- 19 -\n\n듬목특히 10- 029200 도면11 립실동을 NCC 근\n\n등록특허 10- 0292008\n \n도면 1b\n \n- 21 -\n\n등록특허 10- 0292008\n \n도면 2\n \n- 22 -\n\n등록특허 10- 0292008\n \n도면 3\n \n- 23 -\n\n등록특허 10- 0292008\n \n도면 4\n \n- 24 -\n\n등록특허 10- 0292008\n \n도면 5\n \n- 25 -\n\n등록특허 10- 0292008\n \n도면 6\n \n- 26 -\n\n등록특허 10- 0292008\n \n도면 7\n \n- 27 -\n\n등록특허 10- 0292008\n \n도면 8\n \n- 28 -"
+    }
+}
