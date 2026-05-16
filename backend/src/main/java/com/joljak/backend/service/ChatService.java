@@ -12,14 +12,18 @@ import java.util.List;
 @Service
 public class ChatService {
 
-    private static final String DEMO_AI_ANSWER = "데모 답변입니다";
-
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
+    private final AiService aiService;
 
-    public ChatService(ChatRoomRepository chatRoomRepository, ChatMessageRepository chatMessageRepository) {
+    public ChatService(
+            ChatRoomRepository chatRoomRepository,
+            ChatMessageRepository chatMessageRepository,
+            AiService aiService
+    ) {
         this.chatRoomRepository = chatRoomRepository;
         this.chatMessageRepository = chatMessageRepository;
+        this.aiService = aiService;
     }
 
     @Transactional
@@ -27,11 +31,10 @@ public class ChatService {
         String title = makeTitle(firstMessage);
         ChatRoom room = chatRoomRepository.save(new ChatRoom(userEmail, title));
 
-        // USER message
         chatMessageRepository.save(new ChatMessage(room, ChatMessage.Role.USER, userEmail, firstMessage));
 
-        // AI demo message도 같이 저장(프론트가 그대로 렌더)
-        chatMessageRepository.save(new ChatMessage(room, ChatMessage.Role.AI, userEmail, DEMO_AI_ANSWER));
+        String aiAnswer = aiService.generateAnswer(firstMessage);
+        chatMessageRepository.save(new ChatMessage(room, ChatMessage.Role.AI, userEmail, aiAnswer));
 
         room.touch();
         return room;
@@ -47,7 +50,9 @@ public class ChatService {
         }
 
         chatMessageRepository.save(new ChatMessage(room, ChatMessage.Role.USER, userEmail, message));
-        chatMessageRepository.save(new ChatMessage(room, ChatMessage.Role.AI, userEmail, DEMO_AI_ANSWER));
+
+        String aiAnswer = aiService.generateAnswer(message);
+        chatMessageRepository.save(new ChatMessage(room, ChatMessage.Role.AI, userEmail, aiAnswer));
 
         room.touch();
         return chatMessageRepository.findByRoomIdOrderByCreatedAtAsc(roomId);
@@ -79,7 +84,6 @@ public class ChatService {
             throw new IllegalArgumentException("권한이 없습니다.");
         }
 
-        // FK 때문에 메시지 먼저 삭제
         chatMessageRepository.deleteByRoomId(roomId);
         chatRoomRepository.delete(room);
     }
