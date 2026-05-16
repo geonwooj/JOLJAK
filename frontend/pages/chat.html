@@ -18,6 +18,10 @@
       <aside class="side">
         <div class="side__spacer"></div>
 
+        <div id="dragOverlay" class="drag-overlay">
+          <div class="drag-overlay__content">📂 파일을 여기에 놓으세요</div>
+        </div>
+
         <nav class="side__content" id="sideContent">
           <div class="side-section">
             <div class="side-section__title">내 채팅</div>
@@ -96,7 +100,8 @@
         <!-- Bottom input -->
         <footer class="bottom">
           <div class="composer">
-            <button class="circle" type="button" aria-label="추가">
+            <button class="circle" id="btnFile" type="button" aria-label="추가">
+              <input type="file" id="fileInput" hidden />
               <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path
                   d="M12 5v14"

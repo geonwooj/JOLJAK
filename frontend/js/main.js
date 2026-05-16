@@ -17,6 +17,9 @@ document.addEventListener("DOMContentLoaded", () => {
     app.classList.toggle("is-collapsed"),
   );
 
+  const btnFile = document.getElementById("btnFile");
+  const fileInput = document.getElementById("fileInput");
+
   function getToken() {
     return localStorage.getItem("token") || "";
   }
@@ -275,6 +278,75 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       onSend();
     }
+  });
+
+  btnFile?.addEventListener("click", () => {
+    fileInput.click();
+  });
+
+  function renderFileMessage(role, fileName) {
+    if (!chatWrap) return;
+
+    const isUser = role === "USER";
+
+    const item = document.createElement("div");
+    item.className = isUser ? "msg msg--user" : "msg";
+
+    item.innerHTML = `
+    <div class="msg__avatar ${isUser ? "msg__avatar--q" : "msg__avatar--a"}">
+      ${isUser ? "Q" : "A"}
+    </div>
+    <div class="msg__bubble file-bubble">
+      📎 ${fileName}
+    </div>
+  `;
+
+    chatWrap.appendChild(item);
+
+    item.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
+  }
+
+  fileInput?.addEventListener("change", async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const token = getToken();
+
+    if (!token) {
+      await CustomModal.alert("로그인이 필요합니다.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/files/upload`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const text = await res.text();
+
+      if (!res.ok) {
+        await CustomModal.alert("파일 업로드 실패: " + text);
+        return;
+      }
+
+      // 채팅창에 파일 표시
+      renderFileMessage("USER", file.name);
+    } catch (err) {
+      console.error(err);
+      await CustomModal.alert("서버 연결 실패");
+    }
+
+    fileInput.value = "";
   });
 
   // ✅ 초기 로드

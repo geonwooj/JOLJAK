@@ -230,9 +230,14 @@
           </div>
         </section>
 
+        <div id="dragOverlay" class="drag-overlay">
+          <div class="drag-overlay__content">📂 파일을 여기에 놓으세요</div>
+        </div>
+
         <footer class="bottom">
           <div class="composer">
-            <button class="circle" type="button" aria-label="추가">
+            <button class="circle" id="btnFile" type="button" aria-label="추가">
+              <input type="file" id="fileInput" hidden />
               <!-- plus -->
               <svg viewBox="0 0 24 24" fill="none">
                 <path
