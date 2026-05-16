@@ -3,4 +3,14 @@ node_modules/
 .DS_Store
 venv/
 __pycache__/
-JOLJAK.code-workspace
+JOLJAK.code-workspaceai/Lib/
+ai/Scripts/
+ai/Include/
+ai/pyvenv.cfg
+ai/data/
+*.npz
+*.npy
+*.pt
+ai/Library/
+ai/models/
+ai/share/
