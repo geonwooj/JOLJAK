@@ -161,3 +161,37 @@ body {
   overflow-y: auto;
   height: 100%;
 }
+
+.ai-section-title {
+  margin: 24px 0 12px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #111827;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 8px;
+}
+
+.ai-claim-title {
+  margin: 20px 0 8px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #1f2937;
+}
+
+.ai-sub-title {
+  margin: 18px 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #374151;
+}
+
+.ai-paragraph {
+  margin: 8px 0;
+  line-height: 1.75;
+  white-space: normal;
+}
+
+.ai-list-item {
+  margin: 8px 0 8px 12px;
+  line-height: 1.7;
+}

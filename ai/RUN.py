@@ -827,7 +827,6 @@ description.clean:
            변환된 통합 문자열 모두 허용.
         """
         print(f"[DEBUG] run: 사용자 입력 길이 - {len(user_input)}")
-
         fewshot_path = FEW_SHOT_PATH / "few-shot.json"
         if not fewshot_path.exists():
             return "ERROR: Few-shot 경로 탐색 실패"
@@ -841,12 +840,12 @@ description.clean:
             return "ERROR: Few-shot 데이터 로드 실패"
 
         print("[DEBUG] run: 1. 섹션화 및 정규화 중...")
-        requests.post(WEB_LINK + "10001") 
+        requests.post(WEB_LINK + "10001")
         sectioned_input = self.split_input_sections(user_input, input_few_shots)
 
         print(f"[DEBUG] run: 2. 유사 특허 검색 중 (도메인: {sectioned_input.get('type')})...")
      
-        requests.post(WEB_LINK + "10002") 
+        requests.post(WEB_LINK + "10002")
         try:
             raw_results = self.searcher.search(sectioned_input, k=10)
         except Exception as e:
@@ -864,8 +863,8 @@ description.clean:
 
         print(f"[DEBUG] run: {len(few_shots)}개 참조 사례 확보.")
         print("[DEBUG] run: 3. 최종 명세서 생성 중...")
+        requests.post(WEB_LINK + "10003")
         
-        requests.post(WEB_LINK + "10003") 
         final_prompt = self._build_final_prompt(sectioned_input, few_shots)
         result       = self.llm.call("당신은 대한민국 최고 수준의 특허 변리사입니다.", final_prompt)
         return result
@@ -901,7 +900,11 @@ description.clean:
 1. 제공된 모든 참고 사례의 서술 양식(상기, 특징으로 하는 등)을 혼합하여 전문적인 문체를 유지하십시오.
 2. 각 사례의 차별점을 분석하여, 사용자 아이디어가 가진 고유의 기술적 구성을 더욱 구체화하십시오.
 3. 출력은 반드시 [사용자의 아이디어 요약], [유사 특허 목록], [발명의 명칭], [특허청구범위], [발명의 설명] 순서로 섹션을 포함해야 합니다.
-4. 명세서 작성이 끝난 후, '원하시면 ~해 드릴 수 있습니다'와 같은 추가 제안이나 후속 작업을 묻는 문장을 절대 포함하지 마십시오. 답변은 명세서 본문으로만 끝맺음하십시오.
+4. 설명 문장, 마크다운, 코드블록을 출력하지 않는다.
+5. 유사 특허 예시를 작성할때, 도메인의 이름은 출력하지 않고 오로지 특허 요약만을 제시한다.
+6. 명확한 구분을위해 '-' 문자를 여러개 사용하여 행을 구분하라.
+7. 사용자 입력에 도면에 대한 묘사가 없는 경우 도면의 묘사는 포함하지 않는다.
+8. 명세서 작성이 끝난 후, '원하시면 ~해 드릴 수 있습니다'와 같은 추가 제안이나 후속 작업을 묻는 문장을 절대 포함하지 마십시오. 답변은 명세서 본문으로만 끝맺음하십시오.
 """
 # --- 실행 예시 ---
 if __name__ == "__main__":

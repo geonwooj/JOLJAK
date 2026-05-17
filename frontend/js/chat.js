@@ -6,7 +6,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const chatWrap = document.getElementById("chatWrap");
   const myChatList = document.getElementById("myChatList");
   const newChatBtn = document.getElementById("newChatBtn");
-  const btnLogin = document.getElementById("btnLogin");
+  const aiStatus = document.getElementById("aiStatus");
+  const aiStatusText = document.getElementById("aiStatusText");
 
   const app = document.getElementById("app");
   const btnMenu = document.getElementById("btnMenu");
@@ -80,35 +81,6 @@ document.addEventListener("DOMContentLoaded", () => {
   input?.addEventListener("input", updateSendState);
   updateSendState();
 
-  function renderAuthUI() {
-    if (!btnLogin) return;
-
-    const userName = localStorage.getItem("userName");
-
-    if (userName) {
-      btnLogin.style.display = "inline-flex";
-      btnLogin.innerHTML = `${userName}님, 환영합니다.`;
-      btnLogin.onclick = () => {
-        window.location.href = "./profile.html";
-      };
-    } else {
-      btnLogin.style.display = "inline-flex";
-      btnLogin.innerHTML = `
-      <svg viewBox="0 0 24 24" fill="none">
-        <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"
-          stroke="currentColor" stroke-width="1.8"/>
-        <path d="M4 20a8 8 0 0 1 16 0"
-          stroke="currentColor" stroke-width="1.8"
-          stroke-linecap="round"/>
-      </svg>
-      로그인 하세요
-    `;
-      btnLogin.onclick = () => {
-        window.location.href = "./login.html";
-      };
-    }
-  }
-
   // ====== 채팅 목록 UI: 렌더 + 삭제 메뉴(메인과 동일) ======
 
   function closeAllDropdowns() {
@@ -130,8 +102,6 @@ document.addEventListener("DOMContentLoaded", () => {
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#039;");
   }
-
-  let authConfirmed = false;
 
   function createChatItem(room) {
     const id = room.chatId ?? room.id;
@@ -262,6 +232,124 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function formatAiAnswer(text) {
+    let formatted = String(text ?? "");
+
+    // 구분선 제거
+    formatted = formatted.replaceAll("----------------------------------------------------------------", "");
+
+    // 혹시 이전 포맷팅 때문에 깨진 단어 복구
+    formatted = formatted.replace(/([가-힣])\s*\n+\s*다\./g, "$1다.");
+    formatted = formatted.replace(/([가-힣])\s*\n+\s*법\./g, "$1법.");
+    formatted = formatted.replace(/([가-힣])\s*\n+\s*템\./g, "$1템.");
+
+    // 쉼표 뒤 줄바꿈은 다시 붙임
+    formatted = formatted.replace(/,\s*\n+\s*/g, ", ");
+
+    // 괄호형 항목 "(가)", "(나)", "(다)"는 문장 안 항목으로 처리
+    formatted = formatted.replace(/\s*\n+\s*(\([가-하]\))/g, " $1");
+    formatted = formatted.replace(/(\([가-하]\))\s*\n+\s*/g, "$1 ");
+
+    // 큰 섹션 제목 줄바꿈
+    formatted = formatted.replace(/\[사용자의 아이디어 요약\]/g, "\n\n[사용자의 아이디어 요약]\n");
+    formatted = formatted.replace(/\[유사 특허 목록\]/g, "\n\n[유사 특허 목록]\n");
+    formatted = formatted.replace(/\[발명의 명칭\]/g, "\n\n[발명의 명칭]\n");
+    formatted = formatted.replace(/\[특허청구범위\]/g, "\n\n[특허청구범위]\n");
+    formatted = formatted.replace(/\[발명의 설명\]/g, "\n\n[발명의 설명]\n");
+
+    // "방법. 청구항 2", "시스템. 청구항 9"처럼 다음 청구항 제목이 앞 문장에 붙어 나온 경우만 분리
+    // 단, "청구항 1에 있어서"는 여기서 제목 처리하지 않음
+    formatted = formatted.replace(
+      /(방법\.|시스템\.|장치\.|매체\.|것\.|단계\.|수단\.)\s+청구항\s*(\d+)(?=\s+(?!에 있어서)[가-힣A-Za-z])/g,
+      "$1\n\n청구항 $2\n"
+    );
+
+    // 이미 줄 시작에 단독으로 있는 "청구항 1", "청구항 2"만 제목으로 정리
+    formatted = formatted.replace(
+      /(^|\n)\s*청구항\s*(\d+)\s*$/gm,
+      "\n\n청구항 $2"
+    );
+
+    // 혹시 "청구항 1"과 "에 있어서"가 줄바꿈으로 깨진 경우 복구
+    formatted = formatted.replace(
+      /\n+\s*청구항\s*(\d+)\s*\n+\s*에 있어서/g,
+      "\n\n청구항 $1에 있어서"
+    );
+
+    // 발명의 설명 번호별 줄바꿈
+    formatted = formatted.replace(
+      /(\d+)\.\s*(기술분야|배경기술|발명의 내용|발명의 실시를 위한 구체적인 내용|산업상 이용가능성)/g,
+      "\n\n$1. $2\n"
+    );
+
+    // 가. 나. 다. 라. 소제목 처리
+    // 문장 끝의 "다."는 건드리지 않도록, 정해진 소제목만 처리
+    formatted = formatted.replace(
+      /(^|\n)\s*([가-하])\.\s*(해결하고자 하는 과제|과제의 해결 수단|발명의 효과|전체 처리 흐름|Dynamic Weights Algorithm 적용|RAG 기반 컨텍스트 및 few-shot 예시 구성의 구체화|시스템 구성의 예)/g,
+      "\n\n$2. $3"
+    );
+
+    // 유사 특허 목록 bullet 줄바꿈
+    formatted = formatted.replace(/\s-\s/g, "\n- ");
+
+    // 번호 목록 줄바꿈: (1), (2), (3)
+    formatted = formatted.replace(/\s\((\d+)\)\s/g, "\n($1) ");
+
+    // 너무 많은 빈 줄 정리
+    formatted = formatted.replace(/\n{3,}/g, "\n\n").trim();
+
+    return formatted;
+  }
+
+  function renderFormattedAiAnswer(container, text) {
+    const formatted = formatAiAnswer(text);
+    const lines = formatted.split("\n");
+
+    lines.forEach((line) => {
+      const trimmed = line.trim();
+
+      if (!trimmed) {
+        container.appendChild(document.createElement("br"));
+        return;
+      }
+
+      const p = document.createElement("p");
+
+      if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+        p.className = "ai-section-title";
+        p.textContent = trimmed.replace("[", "").replace("]", "");
+
+      } else if (/^청구항\s*\d+\s*$/.test(trimmed)) {
+        // 진짜 제목용 "청구항 1", "청구항 2"만 크게 표시
+        p.className = "ai-claim-title";
+        p.textContent = trimmed;
+
+      } else if (/^청구항\s*\d+\s*에 있어서/.test(trimmed)) {
+        // "청구항 1에 있어서"는 제목이 아니라 본문
+        p.className = "ai-paragraph";
+        p.textContent = trimmed;
+
+      } else if (/^\d+\.\s*/.test(trimmed)) {
+        p.className = "ai-sub-title";
+        p.textContent = trimmed;
+
+      } else if (/^[가-하]\.\s*/.test(trimmed)) {
+        p.className = "ai-sub-title";
+        p.textContent = trimmed;
+
+      } else if (trimmed.startsWith("-")) {
+        p.className = "ai-list-item";
+        p.textContent = trimmed;
+
+      } else {
+        p.className = "ai-paragraph";
+        p.textContent = trimmed;
+      }
+
+      container.appendChild(p);
+    });
+  }
+
   function renderMessage(role, text) {
     if (!chatWrap) return;
 
@@ -286,7 +374,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (isUser) {
       textEl.textContent = text;
     } else {
-      typeText(textEl, text); // AI 답변만 타이핑 효과
+      renderFormattedAiAnswer(textEl, text);
     }
 
     // 마지막 메시지로 스크롤
@@ -345,6 +433,96 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  let statusTimer = null;
+
+  function showAiStatus(message) {
+    if (!aiStatus || !aiStatusText) return;
+
+    aiStatus.hidden = false;
+    aiStatusText.textContent = message || "AI가 답변을 생성 중입니다.";
+  }
+
+  function hideAiStatus() {
+    if (!aiStatus) return;
+
+    aiStatus.hidden = true;
+  }
+
+  function stopStatusPolling() {
+    if (statusTimer) {
+      clearInterval(statusTimer);
+      statusTimer = null;
+    }
+  }
+
+  async function checkStatusOnce() {
+    try {
+      const res = await fetch(`${API_BASE}/api/signal/status`, {
+        method: "GET",
+      });
+
+      if (!res.ok) {
+        hideAiStatus();
+        return false;
+      }
+
+      const status = await res.json();
+
+      if (status.running) {
+        showAiStatus(status.message);
+        return true;
+      }
+
+      if (status.code === "DONE") {
+        showAiStatus("AI 답변 생성이 완료되었습니다.");
+
+        setTimeout(async () => {
+          hideAiStatus();
+          await loadMessages();
+          await loadRecentChats();
+        }, 700);
+
+        return false;
+      }
+
+      if (status.code === "ERROR") {
+        showAiStatus(status.message || "AI 답변 생성 중 오류가 발생했습니다.");
+
+        setTimeout(async () => {
+          hideAiStatus();
+          await loadMessages();
+        }, 1000);
+
+        return false;
+      }
+
+      hideAiStatus();
+      return false;
+    } catch (err) {
+      console.error(err);
+      hideAiStatus();
+      return false;
+    }
+  }
+
+  async function startStatusPolling() {
+    stopStatusPolling();
+
+    const shouldPoll = await checkStatusOnce();
+
+    if (!shouldPoll) {
+      return;
+    }
+
+    statusTimer = setInterval(async () => {
+      const stillRunning = await checkStatusOnce();
+
+      if (!stillRunning) {
+        stopStatusPolling();
+      }
+    }, 1000);
+  }
+
   // ====== chat.html: 메시지 보내기 (추가 질문) ======
 
   async function sendMessage() {
@@ -397,14 +575,16 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // 서버에서 전체 메시지를 내려주는 방식이라면 통째로 다시 렌더
-      const lastMessage = messages[messages.length - 1];
-      const role = lastMessage.role;
-      const content = lastMessage.content ?? lastMessage.message ?? "";
+      clearMessages();
 
-      renderMessage(role, content);
+      messages.forEach((m) => {
+        const role = m.role;
+        const content = m.content ?? m.message ?? "";
+        renderMessage(role, content);
+      });
 
-      // 최근 채팅 목록 갱신
+      startStatusPolling();
+
       await loadRecentChats();
     } catch (err) {
       console.error(err);
@@ -432,13 +612,13 @@ document.addEventListener("DOMContentLoaded", () => {
   app?.addEventListener("dragenter", (e) => {
     e.preventDefault();
     dragCounter++;
-    dragOverlay.classList.add("show");
+    dragOverlay?.classList.add("show");
   });
 
   app?.addEventListener("dragleave", (e) => {
     dragCounter--;
     if (dragCounter === 0) {
-      dragOverlay.classList.remove("show");
+      dragOverlay?.classList.remove("show");
     }
   });
 
@@ -449,7 +629,7 @@ document.addEventListener("DOMContentLoaded", () => {
   app?.addEventListener("drop", async (e) => {
     e.preventDefault();
     dragCounter = 0;
-    dragOverlay.classList.remove("show");
+    dragOverlay?.classList.remove("show");
 
     const file = e.dataTransfer.files[0];
     if (!file) return;
@@ -559,4 +739,5 @@ document.addEventListener("DOMContentLoaded", () => {
   renderAuthUI();
   loadRecentChats();
   loadMessages();
+  startStatusPolling();
 });
