@@ -520,22 +520,33 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function showAiStatus(message) {
-    if (!aiStatus || !aiStatusText || !chatWrap) return;
+  if (!aiStatus || !aiStatusText || !chatWrap) return;
 
-    aiStatus.hidden = false;
-    aiStatusText.textContent = message || "AI가 답변을 생성 중입니다.";
+  aiStatus.hidden = false;
 
-    const userMessages = chatWrap.querySelectorAll(".msg--user");
-    const lastUserMessage = userMessages[userMessages.length - 1];
+  // ✅ 텍스트만 변경
+  aiStatusText.textContent =
+    message || "AI가 답변을 생성 중입니다.";
+
+  // ✅ 이미 붙어있으면 재삽입 금지
+  if (!aiStatus.parentElement) {
+
+    const userMessages =
+      chatWrap.querySelectorAll(".msg--user");
+
+    const lastUserMessage =
+      userMessages[userMessages.length - 1];
 
     if (lastUserMessage) {
-      lastUserMessage.insertAdjacentElement("afterend", aiStatus);
+      lastUserMessage.insertAdjacentElement(
+        "afterend",
+        aiStatus
+      );
     } else {
       chatWrap.appendChild(aiStatus);
     }
-
-    aiStatus.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
+}
 
   function hideAiStatus() {
     if (!aiStatus) return;

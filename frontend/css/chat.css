@@ -258,12 +258,30 @@ body {
   gap: 8px;
 }
 
-.ai-status__dot {
-  width: 8px;
-  height: 8px;
+.ai-status__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0, 0, 0, 0.15);
+  border-top-color: #10b981;
   border-radius: 50%;
-  background: currentColor;
-  animation: aiStatusBlink 1s infinite alternate;
+  flex-shrink: 0;
+
+  animation: aiSpinner 0.7s linear infinite;
+
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  flex-shrink: 0;
+}
+
+@keyframes aiSpinner {
+  from {
+    transform: rotate(0deg);
+  }
+  
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .ai-status__text {
