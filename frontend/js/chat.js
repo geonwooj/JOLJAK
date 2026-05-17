@@ -476,11 +476,13 @@ document.addEventListener("DOMContentLoaded", () => {
       if (status.code === "DONE") {
         showAiStatus("AI 답변 생성이 완료되었습니다.");
 
+        stopStatusPolling();
+
         setTimeout(async () => {
           hideAiStatus();
           await loadMessages();
           await loadRecentChats();
-        }, 700);
+        }, 1500);
 
         return false;
       }
