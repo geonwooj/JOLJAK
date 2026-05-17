@@ -2,7 +2,8 @@
 
 .chat {
   flex: 1;
-  overflow-y: auto; /* ✅ 채팅만 스크롤 */
+  overflow-y: auto;
+  /* ✅ 채팅만 스크롤 */
   overflow-x: hidden;
   padding: 24px;
 }
@@ -33,9 +34,11 @@
   color: #fff;
   flex: 0 0 32px;
 }
+
 .msg__avatar--q {
   background: #1e2939;
 }
+
 .msg__avatar--a {
   background: #00a63e;
 }
@@ -100,9 +103,11 @@
   cursor: pointer;
   color: #0a0a0a;
 }
+
 .icon-btn:hover {
   background: #f3f4f6;
 }
+
 .icon-btn svg {
   width: 18px;
   height: 18px;
@@ -114,10 +119,12 @@
   width: 72px;
   flex-basis: 72px;
 }
+
 .app.is-collapsed .side__footer,
 .app.is-collapsed .side-item__text {
   display: none;
 }
+
 /* ✅ 채팅 화면: 전체 스크롤 막고, chat만 스크롤 되게 강제 */
 html,
 body {
@@ -125,30 +132,39 @@ body {
 }
 
 body {
-  overflow: hidden; /* ✅ 전체(바디) 스크롤 차단 */
+  overflow: hidden;
+  /* ✅ 전체(바디) 스크롤 차단 */
 }
 
 .app {
-  height: 100vh; /* ✅ 화면 높이 고정 */
-  overflow: hidden; /* ✅ 앱 바깥 스크롤 방지 */
+  height: 100vh;
+  /* ✅ 화면 높이 고정 */
+  overflow: hidden;
+  /* ✅ 앱 바깥 스크롤 방지 */
 }
 
 .main {
-  height: 100%; /* ✅ 헤더/채팅/푸터를 한 화면에 */
+  height: 100%;
+  /* ✅ 헤더/채팅/푸터를 한 화면에 */
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* ✅ main 자체 스크롤 방지 */
+  overflow: hidden;
+  /* ✅ main 자체 스크롤 방지 */
 }
 
 .top,
 .bottom {
-  flex: 0 0 auto; /* ✅ 헤더/푸터 고정 */
+  flex: 0 0 auto;
+  /* ✅ 헤더/푸터 고정 */
 }
 
 .chat {
-  flex: 1 1 auto; /* ✅ 남는 영역 전부 차지 */
-  min-height: 0; /* ✅ 중요! flex 자식이 스크롤 되게 해줌 */
-  overflow-y: auto; /* ✅ 채팅만 스크롤 */
+  flex: 1 1 auto;
+  /* ✅ 남는 영역 전부 차지 */
+  min-height: 0;
+  /* ✅ 중요! flex 자식이 스크롤 되게 해줌 */
+  overflow-y: auto;
+  /* ✅ 채팅만 스크롤 */
   overflow-x: hidden;
   padding: 24px;
 }
@@ -158,40 +174,90 @@ body {
 }
 
 #chatWrap {
-  overflow-y: auto;
-  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.ai-section-title {
-  margin: 24px 0 12px;
-  font-size: 18px;
-  font-weight: 800;
-  color: #111827;
-  border-bottom: 1px solid #e5e7eb;
-  padding-bottom: 8px;
-}
 
-.ai-claim-title {
-  margin: 20px 0 8px;
-  font-size: 15px;
-  font-weight: 800;
-  color: #1f2937;
-}
-
-.ai-sub-title {
-  margin: 18px 0 8px;
-  font-size: 15px;
-  font-weight: 700;
-  color: #374151;
-}
-
-.ai-paragraph {
-  margin: 8px 0;
+/* AI 답변 문단 정리 */
+.msg__text--formatted {
   line-height: 1.75;
+  word-break: keep-all;
   white-space: normal;
 }
 
-.ai-list-item {
-  margin: 8px 0 8px 12px;
-  line-height: 1.7;
+.msg__text--formatted p {
+  margin: 0 0 12px;
+}
+
+.msg__text--formatted p:last-child {
+  margin-bottom: 0;
+}
+
+.answer-heading {
+  margin: 18px 0 10px;
+  font-weight: 800;
+  font-size: 1.03rem;
+}
+
+.answer-heading:first-child {
+  margin-top: 0;
+}
+
+.answer-claim {
+  margin: 16px 0 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.04);
+  font-weight: 600;
+}
+
+.answer-list {
+  margin: 8px 0 14px;
+  padding-left: 22px;
+}
+
+.answer-list li {
+  margin: 6px 0;
+}
+
+.answer-separator {
+  border: 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.12);
+  margin: 16px 0;
+}
+
+.ai-status {
+  align-self: flex-start;
+  width: fit-content;
+  max-width: 520px;
+  margin: 8px auto 12px 48px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: #f1f3f5;
+  font-size: 14px;
+  color: #444;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
+.ai-status__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: aiStatusBlink 1s infinite alternate;
+}
+
+@keyframes aiStatusBlink {
+  from {
+    opacity: 0.3;
+  }
+
+  to {
+    opacity: 1;
+  }
 }

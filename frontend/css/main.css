@@ -511,3 +511,43 @@ svg {
   font-size: 20px;
   font-weight: 600;
 }
+
+.circle.has-file {
+  outline: 2px solid currentColor;
+}
+
+.file-preview {
+  width: min(820px, calc(100vw - 48px));
+  margin: 0 auto 10px;
+  padding: 10px 14px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 14px;
+  background: #fff;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  font-size: 14px;
+}
+
+.file-preview__name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-preview__size {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.file-preview__remove {
+  border: 0;
+  background: #f3f4f6;
+  border-radius: 999px;
+  width: 26px;
+  height: 26px;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}

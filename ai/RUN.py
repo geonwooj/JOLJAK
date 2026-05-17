@@ -917,19 +917,20 @@ if __name__ == "__main__":
         formatter_class=argparse.RawTextHelpFormatter,
     )
 
-    # ── 입력 소스 (둘 중 하나만 사용) ───────────────────────
-    input_group = parser.add_mutually_exclusive_group(required=True)
-    input_group.add_argument(
-        "--text",
-        type=str,
-        metavar="\"아이디어 텍스트\"",
-        help="발명 아이디어를 텍스트로 직접 입력",
+    parser.add_argument(
+    "--text",
+    type=str,
+    default="",
+    metavar="\"아이디어 텍스트\"",
+    help="발명 아이디어를 텍스트로 직접 입력",
     )
-    input_group.add_argument(
-        "--pdf",
-        type=str,
-        metavar="path/to/patent.pdf",
-        help="발명 아이디어가 담긴 PDF 파일 경로",
+
+    parser.add_argument(
+    "--pdf",
+    type=str,
+    default="",
+    metavar="path/to/patent.pdf",
+    help="발명 아이디어가 담긴 PDF 파일 경로",
     )
 
     # ── 선택 옵션 ────────────────────────────────────────────
@@ -961,7 +962,13 @@ if __name__ == "__main__":
         pipeline = PatentGenerationPipeline(searcher, LLMClient())
         print("[DEBUG] ✅ 모델 및 파이프라인 초기화 완료")
 
-        # ── ✅ --pdf / --text 분기 ────────────────────────────
+        user_inputs = []
+
+        if args.text:
+            print(f"\n[DEBUG] 텍스트 입력 감지 ({len(args.text)}자)")
+            print(f"[DEBUG] 입력 미리보기: {args.text[:80]}...")
+            user_inputs.append("[사용자 자연어 입력]\n" + args.text)
+
         if args.pdf:
             pdf_path = args.pdf
             print(f"\n[DEBUG] PDF 입력 감지: {pdf_path}")
@@ -975,13 +982,12 @@ if __name__ == "__main__":
                 sys.exit(1)
 
             print("[DEBUG] PDF 파싱 및 LLaVA 캡션 생성 중...")
-            user_idea = parse_pdf_to_prompt_input(pdf_path)
-            print(f"[DEBUG] ✅ PDF → prompt 변환 완료 ({len(user_idea)}자)")
+            pdf_idea = parse_pdf_to_prompt_input(pdf_path)
+            print(f"[DEBUG] ✅ PDF → prompt 변환 완료 ({len(pdf_idea)}자)")
 
-        else:
-            user_idea = args.text
-            print(f"\n[DEBUG] 텍스트 입력 감지 ({len(user_idea)}자)")
-            print(f"[DEBUG] 입력 미리보기: {user_idea[:80]}...")
+            user_inputs.append("[첨부 PDF 분석 내용]\n" + pdf_idea)
+
+        user_idea = "\n\n".join(user_inputs)
 
         # ── 파이프라인 실행 ───────────────────────────────────
         print("\n[DEBUG] ========== 파이프라인 실행 시작 ==========")
