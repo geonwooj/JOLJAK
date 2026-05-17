@@ -51,6 +51,12 @@
   background: #f3f4f6;
 }
 
+.msg__bubble--a {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+
 .msg__title {
   font-size: 16px;
   line-height: 24px;
@@ -179,6 +185,14 @@ body {
   gap: 12px;
 }
 
+.ai-section-title {
+  margin: 24px 0 12px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #111827;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 8px;
+}
 
 /* AI 답변 문단 정리 */
 .msg__text--formatted {
@@ -228,6 +242,7 @@ body {
   margin: 16px 0;
 }
 
+/* AI 답변 생성중 상태창: 사용자 입력 바로 아래, 왼쪽 AI 답변 위치 */
 .ai-status {
   align-self: flex-start;
   width: fit-content;
@@ -243,13 +258,18 @@ body {
   gap: 8px;
 }
 
-
 .ai-status__dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: currentColor;
   animation: aiStatusBlink 1s infinite alternate;
+}
+
+.ai-status__text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
 }
 
 @keyframes aiStatusBlink {
