@@ -14,19 +14,17 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class AiService {
 
-    // 기존 코드와 호환용: 텍스트만 있을 때 사용
     public String generateAnswer(String userMessage) {
         return generateAnswer(userMessage, null, null);
     }
 
-    // 텍스트 + 파일 경로 둘 다 처리하는 메서드
     public String generateAnswer(String userMessage, String savedFilePath, Long chatId) {
         try {
             Path backendDir = Path.of(System.getProperty("user.dir")).toAbsolutePath();
             Path projectRoot = backendDir.getParent();
             Path aiDir = projectRoot.resolve("ai");
 
-            Path pythonExe = aiDir.resolve("venv").resolve("Scripts").resolve("python.exe");
+            Path pythonExe = resolvePythonExe(aiDir);
 
             String outputFileName = chatId == null
                     ? "out.txt"
@@ -38,7 +36,6 @@ public class AiService {
             Files.deleteIfExists(resultFile);
 
             List<String> command = new ArrayList<>();
-
             command.add(pythonExe.toString());
             command.add("RUN.py");
 
@@ -47,7 +44,8 @@ public class AiService {
                 command.add(userMessage);
             }
 
-            if (savedFilePath != null && !savedFilePath.isBlank()
+            if (savedFilePath != null
+                    && !savedFilePath.isBlank()
                     && savedFilePath.toLowerCase().endsWith(".pdf")) {
                 command.add("--pdf");
                 command.add(savedFilePath);
@@ -57,11 +55,9 @@ public class AiService {
             command.add("data/" + outputFileName);
 
             ProcessBuilder pb = new ProcessBuilder(command);
-
             pb.directory(aiDir.toFile());
             pb.redirectErrorStream(true);
 
-            // Windows 한글/이모지 깨짐 방지
             pb.environment().put("PYTHONUTF8", "1");
             pb.environment().put("PYTHONIOENCODING", "utf-8");
 
@@ -70,7 +66,6 @@ public class AiService {
                 pb.environment().put("WEB_LINK", "http://localhost:8080/api/signal/");
             }
 
-            // Spring 실행 CMD에 등록한 OPENAI_API_KEY를 Python으로 전달
             String openAiKey = System.getenv("OPENAI_API_KEY");
             if (openAiKey != null && !openAiKey.isBlank()) {
                 pb.environment().put("OPENAI_API_KEY", openAiKey);
@@ -121,5 +116,24 @@ public class AiService {
         } catch (Exception e) {
             return "AI 응답 생성 실패:\n" + e;
         }
+    }
+
+    private Path resolvePythonExe(Path aiDir) {
+        Path windowsVenvPython = aiDir.resolve("venv").resolve("Scripts").resolve("python.exe");
+        if (Files.exists(windowsVenvPython)) {
+            return windowsVenvPython;
+        }
+
+        Path linuxVenvPython = aiDir.resolve("venv").resolve("bin").resolve("python");
+        if (Files.exists(linuxVenvPython)) {
+            return linuxVenvPython;
+        }
+
+        Path linuxPython3 = Path.of("/usr/bin/python3");
+        if (Files.exists(linuxPython3)) {
+            return linuxPython3;
+        }
+
+        return Path.of("python3");
     }
 }

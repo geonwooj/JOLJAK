@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const API_BASE = "http://127.0.0.1:8080";
+  const API_BASE = "http://15.164.30.127:8080";
 
   const input = document.getElementById("messageInput");
   const btnSend = document.getElementById("btnSend");
@@ -298,7 +298,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       console.error(err);
       const msg = err?.message === "Failed to fetch"
-        ? "백엔드 서버에 연결할 수 없습니다. Spring Boot가 실행 중인지, 주소가 http://127.0.0.1:8080 인지 확인해주세요."
+        ? "백엔드 서버에 연결할 수 없습니다. Spring Boot가 실행 중인지, 주소가 http://15.164.30.127:8080 인지 확인해주세요."
         : (err?.message || err);
       await CustomModal.alert("채팅 시작 실패: " + msg);
       updateSendState();

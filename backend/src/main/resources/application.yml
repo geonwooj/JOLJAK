@@ -1,9 +1,9 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:testdb
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
+    url: ${DB_URL:jdbc:h2:mem:testdb}
+    driver-class-name: ${DB_DRIVER:org.h2.Driver}
+    username: ${DB_USERNAME:sa}
+    password: ${DB_PASSWORD:}
 
   jpa:
     hibernate:
@@ -26,8 +26,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: joljak5114@gmail.com
-    password: "mjco hnxf fuus ojhg"
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
@@ -38,9 +38,9 @@ spring:
 
 app:
   mail:
-    from: "AI Patent Office <joljak5114@gmail.com>"
+    from: "AI Patent Office <${MAIL_USERNAME:}>"
   email-verification:
     expiry-minutes: 5
 
 file:
-  upload-dir: uploads/chat
+  upload-dir: ${FILE_UPLOAD_DIR:uploads/chat}

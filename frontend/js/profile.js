@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   try {
-    const res = await fetch("http://127.0.0.1:8080/api/users/me", {
+    const res = await fetch("http://15.164.30.127:8080/api/users/me", {
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -77,7 +77,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch("http://127.0.0.1:8080/api/users/me", {
+      const res = await fetch("http://15.164.30.127:8080/api/users/me", {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
