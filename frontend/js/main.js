@@ -323,9 +323,28 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   btnFile?.addEventListener("click", () => fileInput?.click());
-  fileInput?.addEventListener("change", async () => {
-    selectedFile = fileInput.files?.[0] || null;
+  function pickFile(file) {
+    if (!file) {
+      selectedFile = null;
+      updateSendState();
+      return;
+    }
+
+    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    if (!isPdf) {
+      selectedFile = null;
+      if (fileInput) fileInput.value = "";
+      CustomModal.alert("PDF 파일만 첨부할 수 있습니다.");
+      updateSendState();
+      return;
+    }
+
+    selectedFile = file;
     updateSendState();
+  }
+
+  fileInput?.addEventListener("change", async () => {
+    pickFile(fileInput.files?.[0] || null);
   });
 
   app?.addEventListener("dragenter", (e) => {
@@ -350,8 +369,7 @@ document.addEventListener("DOMContentLoaded", () => {
     dragCounter = 0;
     dragOverlay?.classList.remove("show");
 
-    selectedFile = e.dataTransfer.files?.[0] || null;
-    updateSendState();
+    pickFile(e.dataTransfer.files?.[0] || null);
   });
 
   newChatBtn?.addEventListener("click", () => input?.focus());

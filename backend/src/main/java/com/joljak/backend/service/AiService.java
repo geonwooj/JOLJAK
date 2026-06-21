@@ -14,13 +14,13 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class AiService {
 
+    // 기존 코드와 호환용: 텍스트만 있을 때 사용
     public String generateAnswer(String userMessage) {
         return generateAnswer(userMessage, null, null);
     }
 
+    // 텍스트 + 파일 경로 둘 다 처리하는 메서드
     public String generateAnswer(String userMessage, String savedFilePath, Long chatId) {
-        Path resultFile = null;
-
         try {
             Path backendDir = Path.of(System.getProperty("user.dir")).toAbsolutePath();
             Path projectRoot = backendDir.getParent();
@@ -32,51 +32,45 @@ public class AiService {
                     ? "out.txt"
                     : "out_" + chatId + ".txt";
 
-            resultFile = aiDir.resolve("data").resolve(outputFileName);
+            Path resultFile = aiDir.resolve("data").resolve(outputFileName);
 
             Files.createDirectories(resultFile.getParent());
             Files.deleteIfExists(resultFile);
 
             List<String> command = new ArrayList<>();
+
             command.add(pythonExe.toString());
             command.add("RUN.py");
 
-            boolean hasText = userMessage != null && !userMessage.trim().isEmpty();
-            boolean hasPdf = savedFilePath != null
-                    && !savedFilePath.trim().isEmpty()
-                    && savedFilePath.toLowerCase().endsWith(".pdf");
-
-            if (hasPdf) {
-                Path pdfPath = Path.of(savedFilePath).toAbsolutePath().normalize();
-
-                if (!Files.exists(pdfPath)) {
-                    return "AI 응답 생성 실패: PDF 파일을 찾을 수 없습니다."
-                            + "\nPDF 경로=" + pdfPath;
-                }
-
-                command.add("--pdf");
-                command.add(pdfPath.toString());
-            }
-
-            if (hasText) {
+            if (userMessage != null && !userMessage.isBlank()) {
                 command.add("--text");
-                command.add(userMessage.trim());
+                command.add(userMessage);
             }
 
-            if (!hasText && !hasPdf) {
-                return "AI 응답 생성 실패: 입력된 텍스트 또는 PDF 파일이 없습니다.";
+            if (savedFilePath != null && !savedFilePath.isBlank()
+                    && savedFilePath.toLowerCase().endsWith(".pdf")) {
+                command.add("--pdf");
+                command.add(savedFilePath);
             }
 
             command.add("--output");
             command.add("data/" + outputFileName);
 
             ProcessBuilder pb = new ProcessBuilder(command);
+
             pb.directory(aiDir.toFile());
             pb.redirectErrorStream(true);
 
+            // Windows 한글/이모지 깨짐 방지
             pb.environment().put("PYTHONUTF8", "1");
             pb.environment().put("PYTHONIOENCODING", "utf-8");
 
+            if (chatId != null) {
+                pb.environment().put("CHAT_ID", String.valueOf(chatId));
+                pb.environment().put("WEB_LINK", "http://localhost:8080/api/signal/");
+            }
+
+            // Spring 실행 CMD에 등록한 OPENAI_API_KEY를 Python으로 전달
             String openAiKey = System.getenv("OPENAI_API_KEY");
             if (openAiKey != null && !openAiKey.isBlank()) {
                 pb.environment().put("OPENAI_API_KEY", openAiKey);
@@ -85,7 +79,6 @@ public class AiService {
             Process process = pb.start();
 
             StringBuilder log = new StringBuilder();
-
             try (BufferedReader br = new BufferedReader(
                     new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
 
@@ -99,10 +92,7 @@ public class AiService {
 
             if (!finished) {
                 process.destroyForcibly();
-
-                return "AI 처리 시간이 너무 오래 걸려 중단되었습니다."
-                        + "\n\n[실행 명령어]\n" + command
-                        + "\n\n[실행 로그]\n" + log;
+                return "AI 처리 시간이 너무 오래 걸려 중단되었습니다.\n\n[실행 로그]\n" + log;
             }
 
             int exitCode = process.exitValue();
@@ -121,8 +111,8 @@ public class AiService {
 
             if (result.isEmpty()) {
                 return "AI 결과가 비어 있습니다."
-                        + "\ncommand=" + command
                         + "\nexitCode=" + exitCode
+                        + "\ncommand=" + command
                         + "\n\n[실행 로그]\n" + log;
             }
 
@@ -130,13 +120,6 @@ public class AiService {
 
         } catch (Exception e) {
             return "AI 응답 생성 실패:\n" + e;
-        } finally {
-            if (resultFile != null) {
-                try {
-                    Files.deleteIfExists(resultFile);
-                } catch (Exception ignore) {
-                }
-            }
         }
     }
 }

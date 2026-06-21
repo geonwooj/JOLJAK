@@ -17,13 +17,18 @@ public class SignalController {
     }
 
     @PostMapping("/signal/{id}")
-    public ResponseEntity<String> receiveSignal(@PathVariable String id) {
-        signalService.update(id);
+    public ResponseEntity<String> receiveSignal(
+            @PathVariable String id,
+            @RequestParam(value = "chatId", required = false) Long chatId
+    ) {
+        signalService.update(id, chatId);
         return ResponseEntity.ok("received");
     }
 
     @GetMapping("/signal/status")
-    public ResponseEntity<Map<String, Object>> getStatus() {
-        return ResponseEntity.ok(signalService.getStatus());
+    public ResponseEntity<Map<String, Object>> getStatus(
+            @RequestParam(value = "chatId", required = false) Long chatId
+    ) {
+        return ResponseEntity.ok(signalService.getStatus(chatId));
     }
 }

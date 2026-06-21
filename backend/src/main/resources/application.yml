@@ -8,10 +8,10 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: false
+    show-sql: true
     properties:
       hibernate:
-        format_sql: false
+        format_sql: true
 
   h2:
     console:
@@ -35,15 +35,6 @@ spring:
           starttls:
             enable: true
             required: true
-
-logging:
-  level:
-    root: WARN
-    org.springframework: WARN
-    org.hibernate: WARN
-    org.hibernate.SQL: OFF
-    org.hibernate.orm.jdbc.bind: OFF
-    com.joljak.backend: WARN
 
 app:
   mail:

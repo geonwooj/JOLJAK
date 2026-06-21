@@ -1,69 +1,311 @@
 document.addEventListener("DOMContentLoaded", () => {
   const API_BASE = "http://127.0.0.1:8080";
 
-  const input = document.getElementById("messageInput");
-  const btnSend = document.getElementById("btnSend");
-  const chatWrap = document.getElementById("chatWrap");
-  const myChatList = document.getElementById("myChatList");
-  const newChatBtn = document.getElementById("newChatBtn");
-  const btnLogin = document.getElementById("btnLogin");
-  const app = document.getElementById("app");
-  const btnMenu = document.getElementById("btnMenu");
-  const btnFile = document.getElementById("btnFile");
-  const fileInput = document.getElementById("fileInput");
-  const dragOverlay = document.getElementById("dragOverlay");
+  const $ = (id) => document.getElementById(id);
+  const el = {
+    input: $("messageInput"),
+    btnSend: $("btnSend"),
+    chatWrap: $("chatWrap"),
+    myChatList: $("myChatList"),
+    newChatBtn: $("newChatBtn"),
+    btnLogin: $("btnLogin"),
+    app: $("app"),
+    btnMenu: $("btnMenu"),
+    btnFile: $("btnFile"),
+    fileInput: $("fileInput"),
+    dragOverlay: $("dragOverlay"),
+    aiStatus: $("aiStatus"),
+    aiStatusText: $("aiStatusText"),
+  };
 
-  // 있으면 사용, 없어도 오류 안 나게 처리
-  const aiStatus = document.getElementById("aiStatus");
-  const aiStatusText = document.getElementById("aiStatusText");
+  const params = new URLSearchParams(window.location.search);
+  const chatId = params.get("chatId");
 
-  let filePreview = null;
+  const state = {
+    authConfirmed: false,
+    selectedFile: null,
+    filePreview: null,
+    dragCounter: 0,
+    statusTimer: null,
+    isSending: false,
+  };
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const chatId = urlParams.get("chatId");
-  const shouldTypeLatestAi = urlParams.get("new") === "1";
+  const auth = {
+    token() {
+      return localStorage.getItem("token") || "";
+    },
+    jsonHeaders() {
+      const token = this.token();
+      return token
+        ? { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+        : { "Content-Type": "application/json" };
+    },
+    multipartHeaders() {
+      const token = this.token();
+      return token ? { Authorization: `Bearer ${token}` } : {};
+    },
+    clear() {
+      localStorage.removeItem("token");
+      localStorage.removeItem("userName");
+      state.authConfirmed = false;
+      renderAuthButton();
+    },
+  };
 
-  let authConfirmed = false;
-  let selectedFile = null;
-  let dragCounter = 0;
-  let statusTimer = null;
-  let isSending = false;
-  let lastStatusCode = "";
+  const api = {
+    async request(url, options = {}) {
+      const res = await fetch(`${API_BASE}${url}`, options);
+      const text = await res.text();
 
-  function getToken() {
-    return localStorage.getItem("token") || "";
+      if (res.status === 401) {
+        auth.clear();
+        throw new Error("로그인이 필요합니다.");
+      }
+
+      if (!res.ok) {
+        throw new Error(text || "요청 처리 중 오류가 발생했습니다.");
+      }
+
+      if (!text) return null;
+
+      try {
+        return JSON.parse(text);
+      } catch {
+        return text;
+      }
+    },
+    recentChats() {
+      return this.request("/api/chats/recent", {
+        method: "GET",
+        headers: auth.jsonHeaders(),
+      });
+    },
+    messages() {
+      return this.request(`/api/chats/${encodeURIComponent(chatId)}/messages`, {
+        method: "GET",
+        headers: auth.jsonHeaders(),
+      });
+    },
+    deleteChat(id) {
+      return this.request(`/api/chats/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        headers: auth.jsonHeaders(),
+      });
+    },
+    status() {
+      return this.request(`/api/signal/status?chatId=${encodeURIComponent(chatId)}`, {
+        method: "GET",
+      });
+    },
+    sendMessage(message, file) {
+      const url = `/api/chats/${encodeURIComponent(chatId)}/messages`;
+
+      if (file) {
+        const formData = new FormData();
+        formData.append("message", message);
+        formData.append("file", file);
+
+        return this.request(url, {
+          method: "POST",
+          headers: auth.multipartHeaders(),
+          body: formData,
+        });
+      }
+
+      return this.request(url, {
+        method: "POST",
+        headers: auth.jsonHeaders(),
+        body: JSON.stringify({ message }),
+      });
+    },
+  };
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
   }
 
-  function jsonHeaders() {
-    const token = getToken();
-    if (!token) return { "Content-Type": "application/json" };
+  function formatPatentAnswer(rawText) {
+    let text = String(rawText ?? "").trim();
+    if (!text) return "";
 
-    return {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    };
+    text = text
+      .replace(/\r\n/g, "\n")
+      .replace(/\r/g, "\n")
+      .replace(/\t/g, " ")
+      .replace(/[ ]{2,}/g, " ")
+      .replace(/\n{3,}/g, "\n\n");
+
+    // 긴 구분선 정리
+    text = text.replace(/[-━─]{8,}/g, "\n---\n");
+
+    // [사용자의 아이디어 요약], [특허청구범위] 같은 제목 정리
+    text = text.replace(/\s*(\[[^\]\n]{2,40}\])\s*/g, "\n\n$1\n");
+
+    // 대괄호 없는 제목도 대괄호 제목처럼 처리
+    text = text.replace(
+      /(^|\n)\s*(사용자의 아이디어 요약|유사 특허 목록|발명의 명칭|특허청구범위|발명의 설명)\s*/g,
+      "\n\n[$2]\n"
+    );
+
+    // "청구항 1 에 있어서" 깨진 거 복구
+    text = text.replace(
+      /청구항\s*(\d+)\s*\n+\s*에\s*있어서/g,
+      "청구항 $1에 있어서"
+    );
+
+    text = text.replace(
+      /청구항\s*(\d+)\s+에\s+있어서/g,
+      "청구항 $1에 있어서"
+    );
+
+    // "청구항 1 또는 청구항 2에 있어서" 같은 문장 내부 표현 복구
+    text = text.replace(
+      /청구항\s*(\d+)\s*\n+\s*(또는|내지)\s*청구항\s*(\d+)\s*에\s*있어서/g,
+      "청구항 $1 $2 청구항 $3에 있어서"
+    );
+
+    // 진짜 청구항 제목 분리
+    // 단, "청구항 1에 있어서"는 제목으로 처리하지 않음
+    text = text.replace(
+      /(^|\n)\s*청구항\s*(\d+)\s*(?!에\s*있어서)/g,
+      "\n\n청구항 $2\n"
+    );
+
+    // 괄호형 항목: (가), (나), (다)
+    text = text.replace(/\s*(\([가-하]\))\s*/g, "\n$1 ");
+
+    // bullet 정리
+    text = text.replace(/\s-\s/g, "\n- ");
+
+    // 쉼표 뒤에 무조건 줄바꿈된 경우 어느 정도 복구
+    text = text.replace(/,\s*\n+\s*(?!\([가-하]\))/g, ", ");
+
+    text = text.replace(/\n{3,}/g, "\n\n").trim();
+
+    const escaped = escapeHtml(text);
+    const lines = escaped.split("\n").map((line) => line.trim());
+
+    const html = [];
+    let listOpen = false;
+
+    function closeList() {
+      if (listOpen) {
+        html.push("</ul>");
+        listOpen = false;
+      }
+    }
+
+    function getNextMeaningfulLine(index) {
+      for (let i = index + 1; i < lines.length; i++) {
+        const value = lines[i]?.trim();
+        if (value) return value;
+      }
+      return "";
+    }
+
+    function isRealClaimTitle(line, index) {
+      if (!/^청구항\s*\d+\s*$/.test(line)) return false;
+
+      const next = getNextMeaningfulLine(index);
+
+      // "청구항 1에 있어서" 류는 제목이 아니라 본문
+      if (/^에\s*있어서/.test(next)) return false;
+      if (/^(또는|내지)\s*청구항\s*\d+/.test(next)) return false;
+
+      return true;
+    }
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+
+      if (!line) {
+        closeList();
+        continue;
+      }
+
+      if (line === "---") {
+        closeList();
+        html.push('<hr class="answer-separator">');
+        continue;
+      }
+
+      // [특허청구범위] 같은 큰 제목
+      if (/^\[[^\]]+\]$/.test(line)) {
+        closeList();
+        const title = line.replace("[", "").replace("]", "");
+        html.push(`<div class="answer-heading">${title}</div>`);
+        continue;
+      }
+
+      // 진짜 청구항 제목
+      if (isRealClaimTitle(line, i)) {
+        closeList();
+        html.push(`<div class="answer-claim-title">${line}</div>`);
+        continue;
+      }
+
+      // "청구항 1에 있어서"는 본문 강조
+      if (/^청구항\s*\d+\s*에 있어서/.test(line)) {
+        closeList();
+        html.push(`<p class="answer-claim-ref">${line}</p>`);
+        continue;
+      }
+
+      // bullet
+      if (/^- /.test(line)) {
+        if (!listOpen) {
+          html.push('<ul class="answer-list">');
+          listOpen = true;
+        }
+        html.push(`<li>${line.replace(/^- /, "")}</li>`);
+        continue;
+      }
+
+      // (가), (나), (다)
+      if (/^\([가-하]\)\s+/.test(line)) {
+        if (!listOpen) {
+          html.push('<ul class="answer-list">');
+          listOpen = true;
+        }
+        html.push(`<li>${line}</li>`);
+        continue;
+      }
+
+      // 가. 나. 다.
+      if (/^[가-하][.)]\s+/.test(line)) {
+        closeList();
+        html.push(`<div class="answer-subheading">${line}</div>`);
+        continue;
+      }
+
+      closeList();
+      html.push(`<p>${line}</p>`);
+    }
+
+    closeList();
+
+    return html.join("");
   }
 
-  function multipartHeaders() {
-    const token = getToken();
-    if (!token) return {};
-    return { Authorization: `Bearer ${token}` };
+  function alertError(prefix, err) {
+    CustomModal.alert(`${prefix}: ${err.message || err}`);
   }
 
-  function renderAuthUI() {
-    if (!btnLogin) return;
+  function renderAuthButton() {
+    if (!el.btnLogin) return;
 
     const userName = localStorage.getItem("userName");
+    const isLoggedIn = state.authConfirmed && userName;
 
-    if (authConfirmed && userName) {
-      btnLogin.style.display = "inline-flex";
-      btnLogin.innerHTML = `${userName}님, 환영합니다.`;
-      btnLogin.onclick = () => {
-        window.location.href = "./profile.html";
-      };
-    } else {
-      btnLogin.style.display = "inline-flex";
-      btnLogin.innerHTML = `
+    el.btnLogin.style.display = "inline-flex";
+    el.btnLogin.innerHTML = isLoggedIn
+      ? `${escapeHtml(userName)}님, 환영합니다.`
+      : `
         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"
             stroke="currentColor" stroke-width="1.8"/>
@@ -72,80 +314,16 @@ document.addEventListener("DOMContentLoaded", () => {
         </svg>
         로그인 하세요
       `;
-      btnLogin.onclick = () => {
-        window.location.href = "./login.html";
-      };
-    }
-  }
 
-  function ensureFilePreview() {
-    if (filePreview) return filePreview;
-
-    const composer = document.querySelector(".composer");
-    if (!composer) return null;
-
-    filePreview = document.createElement("div");
-    filePreview.className = "file-preview";
-    filePreview.style.display = "none";
-
-    composer.parentElement?.insertBefore(filePreview, composer);
-    return filePreview;
-  }
-
-  function renderSelectedFile() {
-    const preview = ensureFilePreview();
-    if (!preview) return;
-
-    if (!selectedFile) {
-      preview.style.display = "none";
-      preview.innerHTML = "";
-      return;
-    }
-
-    const sizeKb = Math.max(1, Math.round(selectedFile.size / 1024));
-    preview.style.display = "flex";
-    preview.innerHTML = `
-      <span class="file-preview__name">📎 ${escapeHtml(selectedFile.name)}</span>
-      <span class="file-preview__size">${sizeKb}KB</span>
-      <button type="button" class="file-preview__remove" aria-label="첨부 취소">×</button>
-    `;
-
-    preview
-      .querySelector(".file-preview__remove")
-      ?.addEventListener("click", () => {
-        selectedFile = null;
-        if (fileInput) fileInput.value = "";
-        updateSendState();
-      });
-  }
-
-  function updateSendState() {
-    const hasText = (input?.value || "").trim().length > 0;
-    const hasFile = selectedFile !== null;
-
-    if (btnSend) btnSend.disabled = !hasText && !hasFile;
-
-    if (btnFile) {
-      btnFile.title = selectedFile ? `첨부됨: ${selectedFile.name}` : "파일 첨부";
-      btnFile.classList.toggle("has-file", !!selectedFile);
-    }
-
-    renderSelectedFile();
-  }
-
-  function escapeHtml(str) {
-    return String(str ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
+    el.btnLogin.onclick = () => {
+      window.location.href = isLoggedIn ? "./profile.html" : "./login.html";
+    };
   }
 
   function closeAllDropdowns() {
     document
       .querySelectorAll(".chat-item.is-open")
-      .forEach((el) => el.classList.remove("is-open"));
+      .forEach((item) => item.classList.remove("is-open"));
   }
 
   function createChatItem(room) {
@@ -155,7 +333,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const wrapper = document.createElement("div");
     wrapper.className = "chat-item";
     wrapper.dataset.chatId = String(id);
-
     wrapper.innerHTML = `
       <a class="side-item" href="./chat.html?chatId=${encodeURIComponent(id)}">
         <span class="side-item__icon">
@@ -175,413 +352,146 @@ document.addEventListener("DOMContentLoaded", () => {
     wrapper.querySelector(".chat-item__more")?.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
-
       const isOpen = wrapper.classList.contains("is-open");
       closeAllDropdowns();
-
       if (!isOpen) wrapper.classList.add("is-open");
     });
 
-    wrapper
-      .querySelector('[data-action="delete"]')
-      ?.addEventListener("click", async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        closeAllDropdowns();
+    wrapper.querySelector('[data-action="delete"]')?.addEventListener("click", async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closeAllDropdowns();
 
-        const ok = await CustomModal.confirm("이 채팅을 삭제할까요?");
-        if (!ok) return;
+      if (!(await CustomModal.confirm("이 채팅을 삭제할까요?"))) return;
 
-        await deleteChatRoom(id);
+      try {
+        await api.deleteChat(id);
         await loadRecentChats();
-
-        if (String(id) === String(chatId)) {
-          window.location.href = "../index.html";
-        }
-      });
+        if (String(id) === String(chatId)) window.location.href = "../index.html";
+      } catch (err) {
+        alertError("삭제 실패", err);
+      }
+    });
 
     return wrapper;
   }
 
-  async function deleteChatRoom(id) {
-    try {
-      const res = await fetch(`${API_BASE}/api/chats/${encodeURIComponent(id)}`, {
-        method: "DELETE",
-        headers: jsonHeaders(),
-      });
-
-      const text = await res.text();
-
-      if (!res.ok) {
-        await CustomModal.alert("삭제 실패: " + text);
-      }
-    } catch (err) {
-      await CustomModal.alert("서버 연결 실패");
-    }
-  }
-
   async function loadRecentChats() {
-    if (!myChatList) return;
+    if (!el.myChatList) return;
+    el.myChatList.innerHTML = "";
 
-    myChatList.innerHTML = "";
-
-    const token = getToken();
-
-    if (!token) {
-      authConfirmed = false;
-      renderAuthUI();
+    if (!auth.token()) {
+      state.authConfirmed = false;
+      renderAuthButton();
       return;
     }
 
     try {
-      const res = await fetch(`${API_BASE}/api/chats/recent`, {
-        method: "GET",
-        headers: jsonHeaders(),
-      });
-
-      if (res.status === 401) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("userName");
-        authConfirmed = false;
-        renderAuthUI();
-        return;
-      }
-
-      if (!res.ok) {
-        authConfirmed = false;
-        renderAuthUI();
-        return;
-      }
-
-      authConfirmed = true;
-      renderAuthUI();
-
-      const rooms = await res.json();
-      rooms.forEach((room) => myChatList.appendChild(createChatItem(room)));
-    } catch (err) {
-      authConfirmed = false;
-      renderAuthUI();
+      const rooms = await api.recentChats();
+      state.authConfirmed = true;
+      renderAuthButton();
+      rooms.forEach((room) => el.myChatList.appendChild(createChatItem(room)));
+    } catch {
+      state.authConfirmed = false;
+      renderAuthButton();
     }
   }
 
-  function formatPatentAnswer(rawText) {
-    let text = String(rawText ?? "").trim();
-    if (!text) return "";
+  function renderMessage(message) {
+    if (!el.chatWrap) return;
 
-    text = text
-      .replace(/\r\n/g, "\n")
-      .replace(/\r/g, "\n")
-      .replace(/\n{3,}/g, "\n\n");
-
-    // 긴 구분선 제거 또는 구분선으로 정리
-    text = text.replace(/[-━─]{8,}/g, "\n---\n");
-
-    // 이전 포맷팅 때문에 깨진 단어 복구
-    text = text.replace(/([가-힣])\s*\n+\s*다\./g, "$1다.");
-    text = text.replace(/([가-힣])\s*\n+\s*법\./g, "$1법.");
-    text = text.replace(/([가-힣])\s*\n+\s*템\./g, "$1템.");
-
-    // 쉼표 뒤 줄바꿈은 보통 다시 붙임
-    // 단, 다음 줄이 "(가)", "(나)", "(다)" 같은 괄호형 항목이면 줄바꿈 유지
-    text = text.replace(/,\s*\n+\s*(?!\([가-하]\))/g, ", ");
-
-    // 괄호형 항목 "(가)", "(나)", "(다)"는 줄 시작에 오도록 정리
-    // 예: "... 데이터는, (가) ..." → "... 데이터는,\n(가) ..."
-    text = text.replace(/\s*(\([가-하]\))\s*/g, "\n$1 ");
-
-    // "(다) 종속항 확장 규칙" 다음에 "을 포함하도록" 같은 조사가 떨어지면 붙임
-    text = text.replace(
-      /(\([가-하]\)[^\n]+)\n+\s*(을|를|은|는|이|가|과|와|의)\s+/g,
-      "$1$2 "
-    );
-
-    // 대괄호 제목은 문단 제목으로 분리
-    text = text.replace(/\s*(\[[^\]\n]{2,40}\])\s*/g, "\n\n$1\n");
-
-    // 대괄호가 빠진 주요 섹션 제목도 처리
-    text = text.replace(
-      /(^|\n)\s*(사용자의 아이디어 요약|유사 특허 목록|발명의 명칭|특허청구범위|발명의 설명)\s*/g,
-      "\n\n[$2]\n"
-    );
-
-    // 번호 제목 분리: 1. 기술분야, 2. 배경기술 등
-    text = text.replace(
-      /(^|\n)\s*(\d{1,2}\.\s*(기술분야|배경기술|발명의 내용|발명의 실시를 위한 구체적인 내용|산업상 이용가능성))/g,
-      "\n\n$2\n"
-    );
-
-    // "방법. 청구항 2"처럼 다음 청구항 제목이 앞 문장에 붙어 나온 경우만 분리
-    // "청구항 1에 있어서"는 절대 제목 처리하지 않음
-    text = text.replace(
-      /(방법\.|시스템\.|장치\.|매체\.|것\.|단계\.|수단\.)\s+청구항\s*(\d+)(?=\s+(?!에\s*있어서)[가-힣A-Za-z])/g,
-      "$1\n\n청구항 $2\n"
-    );
-
-    // 줄 시작에 단독으로 있는 "청구항 1", "청구항 2"만 제목으로 정리
-    text = text.replace(
-      /(^|\n)\s*청구항\s*(\d+)\s*$/gm,
-      "\n\n청구항 $2"
-    );
-
-    // "청구항 1"과 "에 있어서"가 줄바꿈으로 깨진 경우 복구
-    text = text.replace(
-      /\n+\s*청구항\s*(\d+)\s*\n+\s*에 있어서/g,
-      "\n\n청구항 $1에 있어서"
-    );
-
-    // 가. 나. 다. 라. 소제목 처리
-    // 문장 끝의 "다."는 건드리지 않기 위해 정해진 소제목만 처리
-    text = text.replace(
-      /(^|\n)\s*([가-하])\.\s*(해결하고자 하는 과제|과제의 해결 수단|발명의 효과|전체 처리 흐름|Dynamic Weights Algorithm 적용|RAG 기반 컨텍스트 및 few-shot 예시 구성의 구체화|시스템 구성의 예)/g,
-      "\n\n$2. $3"
-    );
-
-    // 유사 특허 목록 bullet 줄바꿈
-    text = text.replace(/\s-\s/g, "\n- ");
-
-    // 번호 목록 줄바꿈: (1), (2), (3)
-    text = text.replace(/\s\((\d+)\)\s/g, "\n($1) ");
-
-    // 너무 많은 빈 줄 정리
-    text = text.replace(/\n{3,}/g, "\n\n").trim();
-
-    const escaped = escapeHtml(text);
-    const lines = escaped.split("\n");
-    const html = [];
-    let listOpen = false;
-
-    function closeList() {
-      if (listOpen) {
-        html.push("</ul>");
-        listOpen = false;
-      }
-    }
-
-    for (const lineRaw of lines) {
-      const line = lineRaw.trim();
-
-      if (!line) {
-        closeList();
-        continue;
-      }
-
-      if (line === "---") {
-        closeList();
-        html.push('<hr class="answer-separator">');
-        continue;
-      }
-
-      if (/^\[[^\]]+\]$/.test(line)) {
-        closeList();
-        html.push(`<div class="answer-heading">${line.replace("[", "").replace("]", "")}</div>`);
-        continue;
-      }
-
-      // 진짜 단독 청구항 제목만 claim 스타일
-      if (/^청구항\s*\d+\s*$/.test(line)) {
-        closeList();
-        html.push(`<div class="answer-claim">${line}</div>`);
-        continue;
-      }
-
-      // "청구항 1에 있어서"는 제목이 아니라 일반 본문
-      if (/^청구항\s*\d+\s*에 있어서/.test(line)) {
-        closeList();
-        html.push(`<p>${line}</p>`);
-        continue;
-      }
-
-      // 괄호형 하위 항목: (가), (나), (다)
-      if (/^\([가-하]\)\s+/.test(line)) {
-        if (!listOpen) {
-          html.push('<ul class="answer-list">');
-          listOpen = true;
-        }
-        html.push(`<li>${line}</li>`);
-        continue;
-      }
-
-      // 가. 나. 다. 같은 소제목
-      if (/^[가-하][.)]\s+/.test(line)) {
-        closeList();
-        html.push(`<div class="answer-subheading">${line}</div>`);
-        continue;
-      }
-
-      closeList();
-      html.push(`<p>${line}</p>`);
-    }
-
-    closeList();
-
-    return html.join("");
-  }
-
-  async function typeFormattedText(element, text) {
-    // 긴 AI 답변을 한 글자씩 innerHTML로 다시 그리면 브라우저 메모리/CPU가 크게 올라감.
-    // 그래서 타이핑 애니메이션은 끄고 완성된 답변만 한 번 렌더링함.
-    element.classList.add("msg__text--formatted");
-    element.innerHTML = formatPatentAnswer(text);
-  }
-
-  function renderMessage(role, text, fileName = null, typing = true) {
-    if (!chatWrap) return;
-
-    const isUser = role === "USER";
-
+    const isUser = message.role === "USER";
     const item = document.createElement("div");
     item.className = isUser ? "msg msg--user" : "msg";
-
-    const safeFileName = fileName ? escapeHtml(fileName) : "";
 
     item.innerHTML = `
       <div class="msg__avatar ${isUser ? "msg__avatar--q" : "msg__avatar--a"}">
         ${isUser ? "Q" : "A"}
       </div>
-      <div class="msg__bubble ${!isUser ? "msg__bubble--a" : ""}">
-        ${fileName ? `<div class="file-bubble">📎 ${safeFileName}</div>` : ""}
+      <div class="msg__bubble ${isUser ? "" : "msg__bubble--a"}">
+        ${message.originalFileName ? `<div class="file-bubble">📎 ${escapeHtml(message.originalFileName)}</div>` : ""}
         <div class="msg__text"></div>
       </div>
     `;
 
-    chatWrap.appendChild(item);
-
     const textEl = item.querySelector(".msg__text");
-    const content = text || "";
+    const content = message.content ?? message.message ?? "";
 
     if (isUser) {
       textEl.textContent = content;
-    } else if (typing) {
-      typeFormattedText(textEl, content);
     } else {
       textEl.classList.add("msg__text--formatted");
-      textEl.innerHTML = formatPatentAnswer(content);
+
+      const formatted = message.formattedContent || formatPatentAnswer(content);
+      textEl.innerHTML = formatted || `<p>${escapeHtml(content)}</p>`;
     }
 
+    el.chatWrap.appendChild(item);
     item.scrollIntoView({ behavior: "smooth", block: "end" });
   }
 
   function clearMessages() {
     hideAiStatus();
-    if (chatWrap) chatWrap.innerHTML = "";
+    if (el.chatWrap) el.chatWrap.innerHTML = "";
   }
 
   async function loadMessages() {
     if (!chatId) return;
 
     try {
-      const res = await fetch(`${API_BASE}/api/chats/${encodeURIComponent(chatId)}/messages`, {
-        method: "GET",
-        headers: jsonHeaders(),
-      });
-
-      const text = await res.text();
-
-      if (!res.ok) {
-        await CustomModal.alert("메시지 로드 실패: " + text);
-        return;
-      }
-
-      let messages;
-
-      try {
-        messages = JSON.parse(text);
-      } catch {
-        await CustomModal.alert("메시지 응답이 JSON이 아닙니다: " + text);
-        return;
-      }
-
+      const messages = await api.messages();
       clearMessages();
-
-      const latestAiIndex = shouldTypeLatestAi
-        ? messages.map((m) => m.role).lastIndexOf("AI")
-        : -1;
-
-      messages.forEach((m, index) => {
-        const content = m.content ?? m.message ?? "";
-        const typing = index === latestAiIndex;
-        renderMessage(m.role, content, m.originalFileName ?? null, typing);
-      });
-
-      if (shouldTypeLatestAi) {
-        const cleanUrl = `./chat.html?chatId=${encodeURIComponent(chatId)}`;
-        window.history.replaceState({}, "", cleanUrl);
-      }
-
-      setTimeout(() => {
-        const last = chatWrap.lastElementChild;
-        if (last) {
-          last.scrollIntoView({ behavior: "auto", block: "end" });
-        }
-      }, 0);
+      messages.forEach(renderMessage);
+      scrollToBottom(false);
     } catch (err) {
-      await CustomModal.alert("서버 연결 실패");
+      alertError("메시지 로드 실패", err);
     }
   }
 
-  function showAiStatus(message) {
-  if (!aiStatus || !aiStatusText || !chatWrap) return;
+  function scrollToBottom(smooth = true) {
+    const last = el.chatWrap?.lastElementChild;
+    last?.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "end" });
+  }
 
-  aiStatus.hidden = false;
+  function showAiStatus(message, shouldScroll = false) {
+    if (!el.aiStatus || !el.aiStatusText || !el.chatWrap) return;
 
-  // ✅ 텍스트만 변경
-  aiStatusText.textContent =
-    message || "AI가 답변을 생성 중입니다.";
+    el.aiStatus.hidden = false;
+    el.aiStatusText.textContent = message || "AI 답변을 생성 중입니다.";
 
-  // ✅ 이미 붙어있으면 재삽입 금지
-  if (!aiStatus.parentElement) {
-
-    const userMessages =
-      chatWrap.querySelectorAll(".msg--user");
-
-    const lastUserMessage =
-      userMessages[userMessages.length - 1];
+    const userMessages = el.chatWrap.querySelectorAll(".msg--user");
+    const lastUserMessage = userMessages[userMessages.length - 1];
 
     if (lastUserMessage) {
-      lastUserMessage.insertAdjacentElement(
-        "afterend",
-        aiStatus
-      );
+      lastUserMessage.insertAdjacentElement("afterend", el.aiStatus);
     } else {
-      chatWrap.appendChild(aiStatus);
+      el.chatWrap.appendChild(el.aiStatus);
+    }
+
+    // 처음 전송했을 때만 스크롤 이동
+    // polling 중에는 false라서 스크롤 고정 안 됨
+    if (shouldScroll) {
+      el.aiStatus.scrollIntoView({ behavior: "smooth", block: "end" });
     }
   }
-}
 
   function hideAiStatus() {
-    if (!aiStatus) return;
-
-    aiStatus.hidden = true;
-
-    if (aiStatus.parentElement) {
-      aiStatus.parentElement.removeChild(aiStatus);
-    }
+    if (!el.aiStatus) return;
+    el.aiStatus.hidden = true;
+    el.aiStatus.remove();
   }
 
   function stopStatusPolling() {
-    if (statusTimer) {
-      clearInterval(statusTimer);
-      statusTimer = null;
-    }
+    if (!state.statusTimer) return;
+    clearInterval(state.statusTimer);
+    state.statusTimer = null;
   }
 
   async function checkStatusOnce() {
+    if (!chatId) return false;
+
     try {
-      const res = await fetch(`${API_BASE}/api/signal/status`, {
-        method: "GET",
-      });
-
-      if (!res.ok) {
-        hideAiStatus();
-        return false;
-      }
-
-      const status = await res.json();
-
-      // 다른 채팅방의 시그널이면 현재 화면에는 표시하지 않음
-      if (status.chatId && chatId && String(status.chatId) !== String(chatId)) {
-        return false;
-      }
+      const status = await api.status();
 
       if (status.running) {
         showAiStatus(status.message);
@@ -596,19 +506,17 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (status.code === "ERROR") {
-        const errorMessage = status.message || "AI 답변 생성 중 오류가 발생했습니다.";
-        showAiStatus(errorMessage);
+        showAiStatus(status.message || "AI 답변 생성 중 오류가 발생했습니다.");
         setTimeout(async () => {
           hideAiStatus();
           await loadMessages();
         }, 1000);
-
         return false;
       }
 
       hideAiStatus();
       return false;
-    } catch (err) {
+    } catch {
       hideAiStatus();
       return false;
     }
@@ -617,187 +525,174 @@ document.addEventListener("DOMContentLoaded", () => {
   async function startStatusPolling() {
     stopStatusPolling();
 
-    const shouldPoll = await checkStatusOnce();
+    if (!(await checkStatusOnce())) return;
 
-    if (!shouldPoll) {
-      return;
-    }
-
-    statusTimer = setInterval(async () => {
-      const stillRunning = await checkStatusOnce();
-
-      if (!stillRunning) {
-        stopStatusPolling();
-      }
+    state.statusTimer = setInterval(async () => {
+      if (!(await checkStatusOnce())) stopStatusPolling();
     }, 1000);
   }
 
+  function ensureFilePreview() {
+    if (state.filePreview) return state.filePreview;
+
+    const composer = document.querySelector(".composer");
+    if (!composer) return null;
+
+    state.filePreview = document.createElement("div");
+    state.filePreview.className = "file-preview";
+    state.filePreview.style.display = "none";
+    composer.parentElement?.insertBefore(state.filePreview, composer);
+    return state.filePreview;
+  }
+
+  function renderSelectedFile() {
+    const preview = ensureFilePreview();
+    if (!preview) return;
+
+    if (!state.selectedFile) {
+      preview.style.display = "none";
+      preview.innerHTML = "";
+      return;
+    }
+
+    const sizeKb = Math.max(1, Math.round(state.selectedFile.size / 1024));
+    preview.style.display = "flex";
+    preview.innerHTML = `
+      <span class="file-preview__name">📎 ${escapeHtml(state.selectedFile.name)}</span>
+      <span class="file-preview__size">${sizeKb}KB</span>
+      <button type="button" class="file-preview__remove" aria-label="첨부 취소">×</button>
+    `;
+
+    preview.querySelector(".file-preview__remove")?.addEventListener("click", () => {
+      state.selectedFile = null;
+      if (el.fileInput) el.fileInput.value = "";
+      updateSendState();
+    });
+  }
+
+  function updateSendState() {
+    const hasText = (el.input?.value || "").trim().length > 0;
+    const hasFile = !!state.selectedFile;
+
+    if (el.btnSend) el.btnSend.disabled = state.isSending || (!hasText && !hasFile);
+
+    if (el.btnFile) {
+      el.btnFile.title = hasFile ? `첨부됨: ${state.selectedFile.name}` : "파일 첨부";
+      el.btnFile.classList.toggle("has-file", hasFile);
+    }
+
+    renderSelectedFile();
+  }
+
+  function pickPdfFile(file) {
+    if (!file) {
+      state.selectedFile = null;
+      updateSendState();
+      return;
+    }
+
+    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+
+    if (!isPdf) {
+      state.selectedFile = null;
+      if (el.fileInput) el.fileInput.value = "";
+      CustomModal.alert("PDF 파일만 첨부할 수 있습니다.");
+      updateSendState();
+      return;
+    }
+
+    state.selectedFile = file;
+    updateSendState();
+  }
+
   async function sendMessage() {
-    if (isSending) return;
+    if (state.isSending) return;
 
-    const msg = (input?.value || "").trim();
-    const file = selectedFile;
+    const message = (el.input?.value || "").trim();
+    const file = state.selectedFile;
 
-    if (!msg && !file) return;
+    if (!message && !file) return;
+    if (!auth.token()) return CustomModal.alert("로그인이 필요합니다.");
+    if (!chatId) return CustomModal.alert("채팅방 ID가 없습니다. index에서 새로 시작하세요.");
 
-    const token = getToken();
+    renderMessage({
+      role: "USER",
+      content: message || `PDF 파일을 첨부했습니다: ${file.name}`,
+      originalFileName: file?.name ?? null,
+    });
 
-    if (!token) {
-      await CustomModal.alert("로그인이 필요합니다.");
-      return;
-    }
+    el.input.value = "";
+    state.selectedFile = null;
+    if (el.fileInput) el.fileInput.value = "";
 
-    if (!chatId) {
-      await CustomModal.alert("채팅방 ID가 없습니다. index에서 새로 시작하세요.");
-      return;
-    }
-
-    renderMessage("USER", msg || `파일을 첨부했습니다: ${file.name}`, file?.name ?? null, false);
-
-    input.value = "";
-    selectedFile = null;
-
-    if (fileInput) fileInput.value = "";
-
-    isSending = true;
-    btnSend.disabled = true;
+    state.isSending = true;
     updateSendState();
     showAiStatus("AI 답변 생성을 준비 중입니다.");
 
     try {
-      let res;
-
-      if (file) {
-        const formData = new FormData();
-        formData.append("message", msg);
-        formData.append("file", file);
-
-        res = await fetch(`${API_BASE}/api/chats/${encodeURIComponent(chatId)}/messages`, {
-          method: "POST",
-          headers: multipartHeaders(),
-          body: formData,
-        });
-      } else {
-        res = await fetch(`${API_BASE}/api/chats/${encodeURIComponent(chatId)}/messages`, {
-          method: "POST",
-          headers: jsonHeaders(),
-          body: JSON.stringify({ message: msg }),
-        });
-      }
-
-      const text = await res.text();
-
-      if (!res.ok) {
-        await CustomModal.alert("전송 실패: " + text);
-        hideAiStatus();
-        updateSendState();
-        return;
-      }
-
-      let messages;
-
-      try {
-        messages = JSON.parse(text);
-      } catch {
-        await CustomModal.alert("전송 응답이 JSON이 아닙니다: " + text);
-        hideAiStatus();
-        updateSendState();
-        return;
-      }
-
-      // 서버가 즉시 AI 답변까지 반환하는 구조면 마지막 메시지를 표시
-      // 서버가 비동기 구조면 USER 메시지만 오고, 이후 polling에서 loadMessages()로 AI 답변 표시
-      const lastMessage = messages[messages.length - 1];
-
-      if (lastMessage && lastMessage.role === "AI") {
-        renderMessage(
-          lastMessage.role,
-          lastMessage.content ?? lastMessage.message ?? "",
-          lastMessage.originalFileName ?? null,
-          true
-        );
-      }
-
-      startStatusPolling();
+      await api.sendMessage(message, file);
       await loadRecentChats();
+      await startStatusPolling();
     } catch (err) {
-      await CustomModal.alert("서버 연결 실패");
       hideAiStatus();
-      updateSendState();
+      alertError("전송 실패", err);
     } finally {
-      isSending = false;
+      state.isSending = false;
+      updateSendState();
     }
   }
 
-  btnMenu?.addEventListener("click", () => {
-    app?.classList.toggle("is-collapsed");
-  });
+  function bindEvents() {
+    el.btnMenu?.addEventListener("click", () => el.app?.classList.toggle("is-collapsed"));
+    el.input?.addEventListener("input", updateSendState);
+    el.btnSend?.addEventListener("click", sendMessage);
+    el.btnFile?.addEventListener("click", () => el.fileInput?.click());
+    el.fileInput?.addEventListener("change", () => pickPdfFile(el.fileInput.files?.[0] || null));
+    el.newChatBtn?.addEventListener("click", () => (window.location.href = "../index.html"));
 
-  document.addEventListener("click", (e) => {
-    const clickedInside = e.target.closest(".chat-item");
-
-    if (!clickedInside) {
-      closeAllDropdowns();
-    }
-  });
-
-  input?.addEventListener("input", updateSendState);
-
-  btnSend?.addEventListener("click", sendMessage);
-
-  input?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
+    el.input?.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
       e.preventDefault();
       sendMessage();
-    }
-  });
+    });
 
-  btnFile?.addEventListener("click", () => {
-    fileInput?.click();
-  });
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".chat-item")) closeAllDropdowns();
+    });
 
-  fileInput?.addEventListener("change", async () => {
-    selectedFile = fileInput.files?.[0] || null;
+    el.app?.addEventListener("dragenter", (e) => {
+      e.preventDefault();
+      state.dragCounter += 1;
+      el.dragOverlay?.classList.add("show");
+    });
+
+    el.app?.addEventListener("dragleave", (e) => {
+      e.preventDefault();
+      state.dragCounter -= 1;
+      if (state.dragCounter <= 0) {
+        state.dragCounter = 0;
+        el.dragOverlay?.classList.remove("show");
+      }
+    });
+
+    el.app?.addEventListener("dragover", (e) => e.preventDefault());
+
+    el.app?.addEventListener("drop", (e) => {
+      e.preventDefault();
+      state.dragCounter = 0;
+      el.dragOverlay?.classList.remove("show");
+      pickPdfFile(e.dataTransfer.files?.[0] || null);
+    });
+  }
+
+  async function init() {
+    renderAuthButton();
     updateSendState();
-  });
+    bindEvents();
+    await loadRecentChats();
+    await loadMessages();
+    await startStatusPolling();
+  }
 
-  app?.addEventListener("dragenter", (e) => {
-    e.preventDefault();
-    dragCounter++;
-    dragOverlay?.classList.add("show");
-  });
-
-  app?.addEventListener("dragleave", (e) => {
-    e.preventDefault();
-    dragCounter--;
-
-    if (dragCounter <= 0) {
-      dragCounter = 0;
-      dragOverlay?.classList.remove("show");
-    }
-  });
-
-  app?.addEventListener("dragover", (e) => {
-    e.preventDefault();
-  });
-
-  app?.addEventListener("drop", async (e) => {
-    e.preventDefault();
-
-    dragCounter = 0;
-    dragOverlay?.classList.remove("show");
-
-    selectedFile = e.dataTransfer.files?.[0] || null;
-    updateSendState();
-  });
-
-  newChatBtn?.addEventListener("click", () => {
-    window.location.href = "../index.html";
-  });
-
-  renderAuthUI();
-  updateSendState();
-  loadRecentChats();
-  loadMessages();
-  startStatusPolling();
+  init();
 });

@@ -6,15 +6,12 @@ import com.joljak.backend.domain.chat.ChatRoom;
 import com.joljak.backend.domain.chat.ChatRoomRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
-import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,26 +19,13 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 @Service
 public class ChatService {
 
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMessageRepository chatMessageRepository;
-    private final AiService aiService;
-    private final SignalService signalService;
-    private final TransactionTemplate transactionTemplate;
-
-    // AI 모델은 메모리를 많이 먹기 때문에 동시에 여러 개 실행하지 않도록 1개씩만 처리
-    private final ExecutorService aiExecutor = Executors.newSingleThreadExecutor(r -> {
-        Thread thread = new Thread(r);
-        thread.setName("ai-worker");
-        thread.setDaemon(true);
-        return thread;
-    });
+    private final ChatAiWorker chatAiWorker;
 
     @Value("${file.upload-dir:uploads/chat}")
     private String uploadDir;
@@ -49,14 +33,11 @@ public class ChatService {
     public ChatService(
             ChatRoomRepository chatRoomRepository,
             ChatMessageRepository chatMessageRepository,
-            AiService aiService,
-            SignalService signalService,
-            PlatformTransactionManager transactionManager) {
+            ChatAiWorker chatAiWorker
+    ) {
         this.chatRoomRepository = chatRoomRepository;
         this.chatMessageRepository = chatMessageRepository;
-        this.aiService = aiService;
-        this.signalService = signalService;
-        this.transactionTemplate = new TransactionTemplate(transactionManager);
+        this.chatAiWorker = chatAiWorker;
     }
 
     @Transactional
@@ -68,18 +49,15 @@ public class ChatService {
     public ChatRoom startChat(String userEmail, String firstMessage, MultipartFile file) {
         validateMessageOrFile(firstMessage, file);
 
-        SavedFile savedFile = saveFileIfExists(file);
-        String normalizedMessage = normalizeMessage(firstMessage, savedFile);
+        String normalizedMessage = normalizeMessage(firstMessage, file);
         String title = makeTitle(normalizedMessage);
-
         ChatRoom room = chatRoomRepository.save(new ChatRoom(userEmail, title));
+
+        SavedFile savedFile = saveFileIfExists(file);
         chatMessageRepository.save(createUserMessage(room, userEmail, normalizedMessage, savedFile));
 
         String savedFilePath = savedFile != null ? savedFile.filePath : null;
-        String aiInput = makeAiInput(firstMessage);
-
-        signalService.start(room.getId(), userEmail);
-        runAiAfterCommit(room.getId(), userEmail, aiInput, savedFilePath);
+        runAiAfterCommit(room.getId(), userEmail, normalizedMessage, savedFilePath);
 
         room.touch();
         return room;
@@ -101,15 +79,12 @@ public class ChatService {
             throw new IllegalArgumentException("권한이 없습니다.");
         }
 
+        String normalizedMessage = normalizeMessage(message, file);
         SavedFile savedFile = saveFileIfExists(file);
-        String normalizedMessage = normalizeMessage(message, savedFile);
         chatMessageRepository.save(createUserMessage(room, userEmail, normalizedMessage, savedFile));
 
         String savedFilePath = savedFile != null ? savedFile.filePath : null;
-        String aiInput = makeAiInput(message);
-
-        signalService.start(room.getId(), userEmail);
-        runAiAfterCommit(room.getId(), userEmail, aiInput, savedFilePath);
+        runAiAfterCommit(room.getId(), userEmail, normalizedMessage, savedFilePath);
 
         room.touch();
         return chatMessageRepository.findByRoomIdOrderByCreatedAtAsc(roomId);
@@ -145,53 +120,18 @@ public class ChatService {
         chatRoomRepository.delete(room);
     }
 
-    private void runAiAfterCommit(Long roomId, String userEmail, String aiInput, String savedFilePath) {
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                aiExecutor.submit(() -> generateAndSaveAiAnswer(roomId, userEmail, aiInput, savedFilePath));
-            }
-        });
-    }
-
-    private void generateAndSaveAiAnswer(Long roomId, String userEmail, String aiInput, String savedFilePath) {
-        String aiAnswer = null;
-
-        try {
-            aiAnswer = aiService.generateAnswer(aiInput, savedFilePath, roomId);
-
-            final String answerToSave = safeAnswer(aiAnswer);
-
-            transactionTemplate.executeWithoutResult(status -> {
-                ChatRoom room = chatRoomRepository.findById(roomId)
-                        .orElseThrow(() -> new IllegalArgumentException("채팅방이 존재하지 않습니다."));
-
-                chatMessageRepository.save(new ChatMessage(room, ChatMessage.Role.AI, userEmail, answerToSave));
-                room.touch();
+    private void runAiAfterCommit(Long roomId, String userEmail, String message, String savedFilePath) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    chatAiWorker.generateAndSaveAiAnswer(roomId, userEmail, message, savedFilePath);
+                }
             });
-
-            signalService.finish(roomId);
-        } catch (Exception e) {
-            String errorMessage = "AI 답변 생성 중 오류가 발생했습니다.";
-
-            transactionTemplate.executeWithoutResult(status -> {
-                chatRoomRepository.findById(roomId).ifPresent(room -> {
-                    chatMessageRepository.save(new ChatMessage(room, ChatMessage.Role.AI, userEmail, errorMessage));
-                    room.touch();
-                });
-            });
-
-            signalService.fail(roomId, errorMessage);
-        } finally {
-            aiAnswer = null;
+            return;
         }
-    }
 
-    private String safeAnswer(String aiAnswer) {
-        if (aiAnswer == null || aiAnswer.trim().isEmpty()) {
-            return "AI 답변이 비어 있습니다.";
-        }
-        return aiAnswer.trim();
+        chatAiWorker.generateAndSaveAiAnswer(roomId, userEmail, message, savedFilePath);
     }
 
     private void validateMessageOrFile(String message, MultipartFile file) {
@@ -199,25 +139,26 @@ public class ChatService {
         boolean hasFile = file != null && !file.isEmpty();
 
         if (!hasMessage && !hasFile) {
-            throw new IllegalArgumentException("메시지 또는 파일을 입력해주세요.");
+            throw new IllegalArgumentException("메시지 또는 PDF 파일을 입력해주세요.");
+        }
+
+        if (hasFile && !isPdf(file)) {
+            throw new IllegalArgumentException("PDF 파일만 첨부할 수 있습니다.");
         }
     }
 
-    private String normalizeMessage(String message, SavedFile savedFile) {
+    private boolean isPdf(MultipartFile file) {
+        String originalFileName = file.getOriginalFilename() == null ? "" : file.getOriginalFilename().toLowerCase();
+        String contentType = file.getContentType() == null ? "" : file.getContentType().toLowerCase();
+        return originalFileName.endsWith(".pdf") || contentType.contains("pdf");
+    }
+
+    private String normalizeMessage(String message, MultipartFile file) {
         String trimmed = message == null ? "" : message.trim();
         if (!trimmed.isEmpty()) {
             return trimmed;
         }
-
-        if (savedFile != null) {
-            return "파일을 첨부했습니다: " + savedFile.originalFileName;
-        }
-
-        return "";
-    }
-
-    private String makeAiInput(String message) {
-        return message == null ? "" : message.trim();
+        return "PDF 파일을 첨부했습니다: " + file.getOriginalFilename();
     }
 
     private ChatMessage createUserMessage(ChatRoom room, String userEmail, String content, SavedFile savedFile) {
@@ -234,7 +175,8 @@ public class ChatService {
                 savedFile.storedFileName,
                 savedFile.filePath,
                 savedFile.contentType,
-                savedFile.fileSize);
+                savedFile.fileSize
+        );
     }
 
     private SavedFile saveFileIfExists(MultipartFile file) {
@@ -247,9 +189,10 @@ public class ChatService {
             Files.createDirectories(dir);
 
             String originalFileName = StringUtils.cleanPath(
-                    file.getOriginalFilename() == null ? "file" : file.getOriginalFilename());
+                    file.getOriginalFilename() == null ? "file.pdf" : file.getOriginalFilename()
+            );
 
-            String extension = "";
+            String extension = ".pdf";
             int dotIndex = originalFileName.lastIndexOf('.');
             if (dotIndex >= 0) {
                 extension = originalFileName.substring(dotIndex);
@@ -258,6 +201,10 @@ public class ChatService {
             String storedFileName = UUID.randomUUID() + extension;
             Path target = dir.resolve(storedFileName).normalize();
 
+            if (!target.startsWith(dir)) {
+                throw new IllegalArgumentException("잘못된 파일 경로입니다.");
+            }
+
             Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
 
             return new SavedFile(
@@ -265,7 +212,8 @@ public class ChatService {
                     storedFileName,
                     target.toString(),
                     file.getContentType(),
-                    file.getSize());
+                    file.getSize()
+            );
         } catch (IOException e) {
             throw new IllegalArgumentException("파일 저장 중 오류가 발생했습니다.");
         }
@@ -279,16 +227,6 @@ public class ChatService {
         return trimmed.length() <= 20 ? trimmed : trimmed.substring(0, 20) + "…";
     }
 
-    @PreDestroy
-    public void shutdownAiExecutor() {
-        aiExecutor.shutdownNow();
-        try {
-            aiExecutor.awaitTermination(3, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-    }
-
     private static class SavedFile {
         private final String originalFileName;
         private final String storedFileName;
@@ -296,12 +234,7 @@ public class ChatService {
         private final String contentType;
         private final Long fileSize;
 
-        private SavedFile(
-                String originalFileName,
-                String storedFileName,
-                String filePath,
-                String contentType,
-                Long fileSize) {
+        private SavedFile(String originalFileName, String storedFileName, String filePath, String contentType, Long fileSize) {
             this.originalFileName = originalFileName;
             this.storedFileName = storedFileName;
             this.filePath = filePath;

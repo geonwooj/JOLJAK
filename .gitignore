@@ -14,3 +14,6 @@ ai/data/
 ai/Library/
 ai/models/
 ai/share/
+backend/uploads/
+backend.zip
+frontend.zip

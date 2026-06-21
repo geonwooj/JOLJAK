@@ -8,6 +8,7 @@ import com.joljak.backend.dto.chat.ChatMessageResponse;
 import com.joljak.backend.dto.chat.ChatRoomResponse;
 import com.joljak.backend.dto.chat.StartChatRequest;
 import com.joljak.backend.service.ChatService;
+import com.joljak.backend.service.AnswerFormatService;
 import io.jsonwebtoken.JwtException;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
@@ -24,10 +25,12 @@ public class ChatController {
 
     private final ChatService chatService;
     private final JwtUtil jwtUtil;
+    private final AnswerFormatService answerFormatService;
 
-    public ChatController(ChatService chatService, JwtUtil jwtUtil) {
+    public ChatController(ChatService chatService, JwtUtil jwtUtil, AnswerFormatService answerFormatService) {
         this.chatService = chatService;
         this.jwtUtil = jwtUtil;
+        this.answerFormatService = answerFormatService;
     }
 
     @PostMapping(value = "/start", consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -88,7 +91,7 @@ public class ChatController {
             String email = extractEmail(authHeader);
             List<ChatMessageResponse> messages = chatService.getMessages(chatId, email)
                     .stream()
-                    .map(ChatMessageResponse::from)
+                    .map(answerFormatService::toResponse)
                     .toList();
             return ResponseEntity.ok(messages);
         } catch (JwtException e) {
@@ -107,7 +110,7 @@ public class ChatController {
         try {
             String email = extractEmail(authHeader);
             List<ChatMessage> all = chatService.addUserMessage(chatId, email, req.getMessage());
-            List<ChatMessageResponse> messages = all.stream().map(ChatMessageResponse::from).toList();
+            List<ChatMessageResponse> messages = all.stream().map(answerFormatService::toResponse).toList();
             return ResponseEntity.ok(messages);
         } catch (JwtException e) {
             return ResponseEntity.status(401).body("Unauthorized");
@@ -126,7 +129,7 @@ public class ChatController {
         try {
             String email = extractEmail(authHeader);
             List<ChatMessage> all = chatService.addUserMessage(chatId, email, message, file);
-            List<ChatMessageResponse> messages = all.stream().map(ChatMessageResponse::from).toList();
+            List<ChatMessageResponse> messages = all.stream().map(answerFormatService::toResponse).toList();
             return ResponseEntity.ok(messages);
         } catch (JwtException e) {
             return ResponseEntity.status(401).body("Unauthorized");
