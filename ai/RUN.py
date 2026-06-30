@@ -1397,6 +1397,7 @@ description clean: 본 발명은, 일 실시예에 따르면, 예를 들어, 예
                     raise ValueError(f"필드 누락: {field}")
             return parsed
         except Exception as e:
+<<<<<<< HEAD
             print(f"[Phase0] 정규화 실패: {e}")
             return {
                 "type": "Ai", "type_reason": "기본값(파싱실패)",
@@ -1417,6 +1418,31 @@ description clean: 본 발명은, 일 실시예에 따르면, 예를 들어, 예
         timer = self.timer
         timer.start_pipeline()
 
+=======
+            print(f"[DEBUG] split_input_sections: 실패 - {e}")
+            return self._get_default_response(raw_input)
+    def _get_default_response(self, raw_input):
+        return {
+            "type": "Ai", "type_reason": "기본값",
+            "abstract":    {"raw": raw_input, "clean": raw_input},
+            "claims":      {"raw": raw_input, "clean": raw_input},
+            "description": {"raw": raw_input, "clean": raw_input},
+            "normalization_log": {
+                "abstract_removed_or_weakened":    [],
+                "claims_removed_or_weakened":      [],
+                "description_removed_or_weakened": []
+            },
+            "missing_information": ["LLM 처리 실패로 인한 기본값"]
+        }
+       
+       
+    def run(self, user_input, num_fewshots=5):
+        """
+        ✅ user_input은 텍스트 또는 이미 parse_pdf_to_prompt_input()로
+           변환된 통합 문자열 모두 허용.
+        """
+        print(f"[DEBUG] run: 사용자 입력 길이 - {len(user_input)}")
+>>>>>>> d12607f3b069fa71c7bb635eeb020c763af685f2
         fewshot_path = FEW_SHOT_PATH / "few-shot.json"
         with open(fewshot_path, encoding="utf-8") as f:
             few_shots = [json.load(f)]
@@ -1749,6 +1775,7 @@ def parse_pdf_to_prompt_input(pdf_path: str) -> str:
         except Exception as e:
             print(f"[PDF] 도면 {i} 캡션 실패: {e}")
 
+<<<<<<< HEAD
     t2 = _time.perf_counter()
     print(f"[PDF Timer] 도면 캡션 전체: {t2 - t1:.2f}s  (도면 {len(parsed['image_paths'])}개)")
     send_signal(10003, "도면 캡션(LLaVA) 완료")
@@ -1762,6 +1789,76 @@ def parse_pdf_to_prompt_input(pdf_path: str) -> str:
 # ════════════════════════════════════════════════════════════════
 # 진입점
 # ════════════════════════════════════════════════════════════════
+=======
+        print("[DEBUG] run: 1. 섹션화 및 정규화 중...")
+        requests.post(WEB_LINK + "10001")
+        sectioned_input = self.split_input_sections(user_input, input_few_shots)
+
+        print(f"[DEBUG] run: 2. 유사 특허 검색 중 (도메인: {sectioned_input.get('type')})...")
+     
+        requests.post(WEB_LINK + "10002")
+        try:
+            raw_results = self.searcher.search(sectioned_input, k=10)
+        except Exception as e:
+            return f"ERROR: 특허 검색 실패 - {e}"
+
+        few_shots         = []
+        MIN_SCORE_THRESHOLD = 0.05
+
+        for res in raw_results:
+            if res["score"] < MIN_SCORE_THRESHOLD and len(few_shots) >= 2:
+                continue
+            few_shots.append(res)
+            if len(few_shots) >= num_fewshots:
+                break
+
+        print(f"[DEBUG] run: {len(few_shots)}개 참조 사례 확보.")
+        print("[DEBUG] run: 3. 최종 명세서 생성 중...")
+        requests.post(WEB_LINK + "10003")
+        
+        final_prompt = self._build_final_prompt(sectioned_input, few_shots)
+        result       = self.llm.call("당신은 대한민국 최고 수준의 특허 변리사입니다.", final_prompt)
+        return result
+    def _build_final_prompt(self, input_json, few_shots):
+        examples_str = ""
+        for i, fs in enumerate(few_shots):
+            text_obj     = fs.get("text", {})
+            abstract     = text_obj.get("abstract", "내용 없음") if text_obj else "내용 없음"
+            claims       = text_obj.get("claims",   "내용 없음") if text_obj else "내용 없음"
+            abstract_snip = abstract[:600] + ("..." if len(abstract) > 600 else "")
+            examples_str += f"""
+### [참고 유사 사례 {i+1}]
+- 문서번호: {fs['doc_id']}
+- 유사도 점수: {fs['score']:.4f}
+- 발명의 요약: {abstract_snip}
+- 핵심 청구범위: {claims}
+"""
+        print("[DEBUG] _build_final_prompt: ✅ 프롬프트 생성 완료")
+        return f"""
+귀하는 아래의 '작성할 발명의 구성'을 바탕으로 정식 특허 명세서를 작성해야 합니다.
+작성 시, 위에 제공된 {len(few_shots)}건의 '참고 유사 사례'들의 전문 용어, 문장 구조, 기술적 권리 범위 확장 방식을 적극적으로 참고하십시오.
+
+[참고할 유사 특허 예시들]
+{examples_str}
+
+[작성할 발명의 구성 (사용자 입력)]
+- 기술 분야: {input_json.get('type', '미분류')}
+- 발명의 요약: {input_json['abstract']['raw']}
+- 핵심 구성(Raw): {input_json['claims']['raw']}
+- 상세 설명 기초: {input_json['description']['raw']}
+
+[작성 지침]
+1. 제공된 모든 참고 사례의 서술 양식(상기, 특징으로 하는 등)을 혼합하여 전문적인 문체를 유지하십시오.
+2. 각 사례의 차별점을 분석하여, 사용자 아이디어가 가진 고유의 기술적 구성을 더욱 구체화하십시오.
+3. 출력은 반드시 [사용자의 아이디어 요약], [유사 특허 목록], [발명의 명칭], [특허청구범위], [발명의 설명] 순서로 섹션을 포함해야 합니다.
+4. 설명 문장, 마크다운, 코드블록을 출력하지 않는다.
+5. 유사 특허 예시를 작성할때, 도메인의 이름은 출력하지 않고 오로지 특허 요약만을 제시한다.
+6. 명확한 구분을위해 '-' 문자를 여러개 사용하여 행을 구분하라.
+7. 사용자 입력에 도면에 대한 묘사가 없는 경우 도면의 묘사는 포함하지 않는다.
+8. 명세서 작성이 끝난 후, '원하시면 ~해 드릴 수 있습니다'와 같은 추가 제안이나 후속 작업을 묻는 문장을 절대 포함하지 마십시오. 답변은 명세서 본문으로만 끝맺음하십시오.
+"""
+# --- 실행 예시 ---
+>>>>>>> d12607f3b069fa71c7bb635eeb020c763af685f2
 if __name__ == "__main__":
     import argparse
 
@@ -1788,17 +1885,101 @@ if __name__ == "__main__":
     claims_searcher = ClaimsOnlySearcher(embedder, NPZ_PATH, JSON_PATH)
     pipeline        = ThreePhaseClaimPipeline(claims_searcher, embedder, LLMClient())
 
+<<<<<<< HEAD
     user_idea = (parse_pdf_to_prompt_input(args.pdf)
                  if args.pdf else args.text)
+=======
+    parser.add_argument(
+    "--text",
+    type=str,
+    default="",
+    metavar="\"아이디어 텍스트\"",
+    help="발명 아이디어를 텍스트로 직접 입력",
+    )
+
+    parser.add_argument(
+    "--pdf",
+    type=str,
+    default="",
+    metavar="path/to/patent.pdf",
+    help="발명 아이디어가 담긴 PDF 파일 경로",
+    )
+>>>>>>> d12607f3b069fa71c7bb635eeb020c763af685f2
 
     result = pipeline.run(user_idea, top_k_docs=args.top_k_docs)
 
     print("\n" + "="*50 + "\n최종 청구항 (Phase 3 결과)\n" + "="*50)
     print(result["final_claims"])
 
+<<<<<<< HEAD
     out = Path(args.output)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(result["final_claims"], encoding="utf-8")
     print(f"\n[저장] {out}")
     print(f"[중간산출물] {pipeline.output_dir}")
     print(f"[Phase1 유사도 차트] {result.get('phase1_chart_path')}")
+=======
+    print(f"[DEBUG] 실행 모드  : {'PDF' if args.pdf else 'TEXT'}")
+    print(f"[DEBUG] 출력 경로  : {args.output}")
+    print(f"[DEBUG] Few-shot 수: {args.num_fewshots}")
+
+    try:
+        print("\n[DEBUG] ========== 모델 로드 시작 ==========")
+        embedder = KorPatBERTEmbedder()
+        searcher = PreComputedPatentSearcher(embedder, NPZ_PATH, JSON_PATH)
+        pipeline = PatentGenerationPipeline(searcher, LLMClient())
+        print("[DEBUG] ✅ 모델 및 파이프라인 초기화 완료")
+
+        user_inputs = []
+
+        if args.text:
+            print(f"\n[DEBUG] 텍스트 입력 감지 ({len(args.text)}자)")
+            print(f"[DEBUG] 입력 미리보기: {args.text[:80]}...")
+            user_inputs.append("[사용자 자연어 입력]\n" + args.text)
+
+        if args.pdf:
+            pdf_path = args.pdf
+            print(f"\n[DEBUG] PDF 입력 감지: {pdf_path}")
+
+            if not Path(pdf_path).exists():
+                print(f"[DEBUG] ❌ PDF 파일 없음: {pdf_path}")
+                sys.exit(1)
+
+            if not pdf_path.lower().endswith(".pdf"):
+                print(f"[DEBUG] ❌ PDF 확장자가 아닙니다: {pdf_path}")
+                sys.exit(1)
+
+            print("[DEBUG] PDF 파싱 및 LLaVA 캡션 생성 중...")
+            pdf_idea = parse_pdf_to_prompt_input(pdf_path)
+            print(f"[DEBUG] ✅ PDF → prompt 변환 완료 ({len(pdf_idea)}자)")
+
+            user_inputs.append("[첨부 PDF 분석 내용]\n" + pdf_idea)
+
+        user_idea = "\n\n".join(user_inputs)
+
+        # ── 파이프라인 실행 ───────────────────────────────────
+        print("\n[DEBUG] ========== 파이프라인 실행 시작 ==========")
+        result = pipeline.run(user_idea, num_fewshots=args.num_fewshots)
+
+        # ── 결과 출력 및 저장 ─────────────────────────────────
+        print("\n" + "=" * 50 + "\n최종 생성 명세서\n" + "=" * 50)
+        print(result)
+
+        output_path = Path(args.output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(result)
+
+        print(f"\n[DEBUG] ✅ 결과 저장 완료: {output_path}")
+        print("[DEBUG] ========== 프로그램 정상 완료 ==========")
+
+    except FileNotFoundError as e:
+        print(f"[DEBUG] ❌ 파일 없음: {e}")
+        sys.exit(1)
+    except Exception as e:
+        import traceback
+        print(f"[DEBUG] ❌ 오류 발생: {type(e).__name__}: {e}")
+        traceback.print_exc()
+        sys.exit(1)
+>>>>>>> d12607f3b069fa71c7bb635eeb020c763af685f2

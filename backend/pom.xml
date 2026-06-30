@@ -37,6 +37,13 @@
 			<scope>runtime</scope>
 		</dependency>
 
+		<!-- MySQL 드라이버 -->
+		<dependency>
+			<groupId>com.mysql</groupId>
+			<artifactId>mysql-connector-j</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
 		<!-- 테스트 관련 -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

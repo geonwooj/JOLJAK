@@ -1,28 +1,40 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const API_BASE = "http://127.0.0.1:8080";
+  const API_BASE = "http://15.164.30.127:8080";
 
   const input = document.getElementById("messageInput");
   const btnSend = document.getElementById("btnSend");
   const myChatList = document.getElementById("myChatList");
   const newChatBtn = document.getElementById("newChatBtn");
-
   const btnLogin = document.getElementById("btnLogin");
-  btnLogin?.addEventListener("click", () => {
-    window.location.href = "./pages/login.html";
-  });
-
   const app = document.getElementById("app");
   const btnMenu = document.getElementById("btnMenu");
-  btnMenu?.addEventListener("click", () =>
-    app.classList.toggle("is-collapsed"),
-  );
+  const btnFile = document.getElementById("btnFile");
+  const fileInput = document.getElementById("fileInput");
+  const dragOverlay = document.getElementById("dragOverlay");
+  let filePreview = null;
+
+  let authConfirmed = false;
+  let selectedFile = null;
+  let dragCounter = 0;
 
   function getToken() {
     return localStorage.getItem("token") || "";
   }
 
-  // ✅ 토큰이 "있다"가 아니라, 서버에서 200으로 확인됐을 때만 로그인으로 간주
-  let authConfirmed = false;
+  function jsonHeaders() {
+    const token = getToken();
+    if (!token) return { "Content-Type": "application/json" };
+    return {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    };
+  }
+
+  function multipartHeaders() {
+    const token = getToken();
+    if (!token) return {};
+    return { Authorization: `Bearer ${token}` };
+  }
 
   function renderAuthUI() {
     if (!btnLogin) return;
@@ -38,50 +50,71 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       btnLogin.style.display = "inline-flex";
       btnLogin.innerHTML = `
-      <svg viewBox="0 0 24 24" fill="none">
-        <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"
-          stroke="currentColor" stroke-width="1.8"/>
-        <path d="M4 20a8 8 0 0 1 16 0"
-          stroke="currentColor" stroke-width="1.8"
-          stroke-linecap="round"/>
-      </svg>
-      로그인 하세요
-    `;
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"
+            stroke="currentColor" stroke-width="1.8"/>
+          <path d="M4 20a8 8 0 0 1 16 0"
+            stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        로그인 하세요
+      `;
       btnLogin.onclick = () => {
         window.location.href = "./pages/login.html";
       };
     }
   }
 
-  function authHeaders() {
-    const token = getToken();
-    if (!token) return { "Content-Type": "application/json" };
-    return {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    };
+  function ensureFilePreview() {
+    if (filePreview) return filePreview;
+
+    const composer = document.querySelector(".composer");
+    if (!composer) return null;
+
+    filePreview = document.createElement("div");
+    filePreview.className = "file-preview";
+    filePreview.style.display = "none";
+
+    composer.parentElement?.insertBefore(filePreview, composer);
+    return filePreview;
+  }
+
+  function renderSelectedFile() {
+    const preview = ensureFilePreview();
+    if (!preview) return;
+
+    if (!selectedFile) {
+      preview.style.display = "none";
+      preview.innerHTML = "";
+      return;
+    }
+
+    const sizeKb = Math.max(1, Math.round(selectedFile.size / 1024));
+    preview.style.display = "flex";
+    preview.innerHTML = `
+      <span class="file-preview__name">📎 ${escapeHtml(selectedFile.name)}</span>
+      <span class="file-preview__size">${sizeKb}KB</span>
+      <button type="button" class="file-preview__remove" aria-label="첨부 취소">×</button>
+    `;
+
+    preview.querySelector(".file-preview__remove")?.addEventListener("click", () => {
+      selectedFile = null;
+      if (fileInput) fileInput.value = "";
+      updateSendState();
+    });
   }
 
   function updateSendState() {
     const hasText = (input?.value || "").trim().length > 0;
-    if (btnSend) btnSend.disabled = !hasText;
+    const hasFile = selectedFile !== null;
+    if (btnSend) btnSend.disabled = !hasText && !hasFile;
+
+    if (btnFile) {
+      btnFile.title = selectedFile ? `첨부됨: ${selectedFile.name}` : "파일 첨부";
+      btnFile.classList.toggle("has-file", !!selectedFile);
+    }
+
+    renderSelectedFile();
   }
-
-  input?.addEventListener("input", updateSendState);
-  updateSendState();
-
-  // ====== 채팅 목록 UI: 렌더 + 삭제 메뉴 ======
-
-  function closeAllDropdowns() {
-    document
-      .querySelectorAll(".chat-item.is-open")
-      .forEach((el) => el.classList.remove("is-open"));
-  }
-
-  document.addEventListener("click", (e) => {
-    const clickedInside = e.target.closest(".chat-item");
-    if (!clickedInside) closeAllDropdowns();
-  });
 
   function escapeHtml(str) {
     return String(str ?? "")
@@ -90,6 +123,12 @@ document.addEventListener("DOMContentLoaded", () => {
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#039;");
+  }
+
+  function closeAllDropdowns() {
+    document
+      .querySelectorAll(".chat-item.is-open")
+      .forEach((el) => el.classList.remove("is-open"));
   }
 
   function createChatItem(room) {
@@ -110,16 +149,13 @@ document.addEventListener("DOMContentLoaded", () => {
         </span>
         <span class="side-item__text">${escapeHtml(title)}</span>
       </a>
-
       <button type="button" class="chat-item__more" aria-label="더보기">⋯</button>
-
       <div class="chat-item__dropdown" role="menu">
         <button type="button" class="chat-item__action" data-action="delete">삭제</button>
       </div>
     `;
 
-    const btnMore = wrapper.querySelector(".chat-item__more");
-    btnMore.addEventListener("click", (e) => {
+    wrapper.querySelector(".chat-item__more").addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
 
@@ -128,14 +164,12 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!isOpen) wrapper.classList.add("is-open");
     });
 
-    const btnDelete = wrapper.querySelector('[data-action="delete"]');
-    btnDelete.addEventListener("click", async (e) => {
+    wrapper.querySelector('[data-action="delete"]').addEventListener("click", async (e) => {
       e.preventDefault();
       e.stopPropagation();
-
       closeAllDropdowns();
 
-      const ok = confirm("이 채팅을 삭제할까요?");
+      const ok = await CustomModal.confirm("이 채팅을 삭제할까요?");
       if (!ok) return;
 
       await deleteChatRoom(chatId);
@@ -147,13 +181,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function deleteChatRoom(chatId) {
     try {
-      const res = await fetch(
-        `${API_BASE}/api/chats/${encodeURIComponent(chatId)}`,
-        {
-          method: "DELETE",
-          headers: authHeaders(),
-        },
-      );
+      const res = await fetch(`${API_BASE}/api/chats/${encodeURIComponent(chatId)}`, {
+        method: "DELETE",
+        headers: jsonHeaders(),
+      });
 
       const text = await res.text();
       if (!res.ok) await CustomModal.alert("삭제 실패: " + text);
@@ -168,8 +199,6 @@ document.addEventListener("DOMContentLoaded", () => {
     myChatList.innerHTML = "";
 
     const token = getToken();
-
-    // ✅ 토큰 없으면: 로그인 미확인 상태, 버튼 보여주고 종료
     if (!token) {
       authConfirmed = false;
       renderAuthUI();
@@ -179,25 +208,23 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const res = await fetch(`${API_BASE}/api/chats/recent`, {
         method: "GET",
-        headers: authHeaders(),
+        headers: jsonHeaders(),
       });
 
-      // ✅ 401이면 토큰 만료/무효 → 토큰 삭제 + 로그인 버튼 유지
       if (res.status === 401) {
         localStorage.removeItem("token");
+        localStorage.removeItem("userName");
         authConfirmed = false;
         renderAuthUI();
         return;
       }
 
       if (!res.ok) {
-        // 다른 에러면 로그인 확인 실패로 처리(버튼 보이게 유지)
         authConfirmed = false;
         renderAuthUI();
         return;
       }
 
-      // ✅ 200 OK면 로그인 확인 완료 → 버튼 숨김
       authConfirmed = true;
       renderAuthUI();
 
@@ -205,30 +232,37 @@ document.addEventListener("DOMContentLoaded", () => {
       rooms.forEach((room) => myChatList.appendChild(createChatItem(room)));
     } catch (err) {
       console.error(err);
-      // 네트워크 에러도 로그인 확인 실패로 처리
       authConfirmed = false;
       renderAuthUI();
     }
   }
 
-  // ====== 새 채팅 버튼 ======
-  newChatBtn?.addEventListener("click", () => {
-    input?.focus();
-  });
+  async function startChat(message, file) {
+    let res;
 
-  // ====== index에서 첫 질문 보내면 새 채팅 생성 후 chat.html로 이동 ======
-  async function startChat(firstMessage) {
-    const res = await fetch(`${API_BASE}/api/chats/start`, {
-      method: "POST",
-      headers: authHeaders(),
-      body: JSON.stringify({ message: firstMessage }),
-    });
+    if (file) {
+      const formData = new FormData();
+      formData.append("message", message || "");
+      formData.append("file", file);
+
+      res = await fetch(`${API_BASE}/api/chats/start`, {
+        method: "POST",
+        headers: multipartHeaders(),
+        body: formData,
+      });
+    } else {
+      res = await fetch(`${API_BASE}/api/chats/start`, {
+        method: "POST",
+        headers: jsonHeaders(),
+        body: JSON.stringify({ message }),
+      });
+    }
 
     const dataOrText = await res.text();
 
-    // 토큰 만료면 처리
     if (res.status === 401) {
       localStorage.removeItem("token");
+      localStorage.removeItem("userName");
       authConfirmed = false;
       renderAuthUI();
       throw new Error("로그인이 만료되었습니다. 다시 로그인해주세요.");
@@ -236,19 +270,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!res.ok) throw new Error(dataOrText);
 
-    let data;
     try {
-      data = JSON.parse(dataOrText);
+      return JSON.parse(dataOrText).chatId;
     } catch {
       throw new Error("서버 응답이 JSON이 아닙니다: " + dataOrText);
     }
-
-    return data.chatId;
   }
 
   async function onSend() {
     const msg = (input?.value || "").trim();
-    if (!msg) return;
+    const file = selectedFile;
+
+    if (!msg && !file) return;
 
     const token = getToken();
     if (!token) {
@@ -259,16 +292,28 @@ document.addEventListener("DOMContentLoaded", () => {
     btnSend.disabled = true;
 
     try {
-      const chatId = await startChat(msg);
-      window.location.href = `./pages/chat.html?chatId=${encodeURIComponent(chatId)}`;
+      const chatId = await startChat(msg, file);
+      selectedFile = null;
+      window.location.href = `./pages/chat.html?chatId=${encodeURIComponent(chatId)}&new=1`;
     } catch (err) {
       console.error(err);
-      await CustomModal.alert("채팅 시작 실패: " + (err?.message || err));
+      const msg = err?.message === "Failed to fetch"
+        ? "백엔드 서버에 연결할 수 없습니다. Spring Boot가 실행 중인지, 주소가 http://15.164.30.127:8080 인지 확인해주세요."
+        : (err?.message || err);
+      await CustomModal.alert("채팅 시작 실패: " + msg);
       updateSendState();
       renderAuthUI();
     }
   }
 
+  btnMenu?.addEventListener("click", () => app.classList.toggle("is-collapsed"));
+
+  document.addEventListener("click", (e) => {
+    const clickedInside = e.target.closest(".chat-item");
+    if (!clickedInside) closeAllDropdowns();
+  });
+
+  input?.addEventListener("input", updateSendState);
   btnSend?.addEventListener("click", onSend);
   input?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
@@ -277,7 +322,59 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // ✅ 초기 로드
-  renderAuthUI(); // 일단 보여주고
-  loadRecentChats(); // 서버 확인 후 숨길지 결정
+  btnFile?.addEventListener("click", () => fileInput?.click());
+  function pickFile(file) {
+    if (!file) {
+      selectedFile = null;
+      updateSendState();
+      return;
+    }
+
+    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    if (!isPdf) {
+      selectedFile = null;
+      if (fileInput) fileInput.value = "";
+      CustomModal.alert("PDF 파일만 첨부할 수 있습니다.");
+      updateSendState();
+      return;
+    }
+
+    selectedFile = file;
+    updateSendState();
+  }
+
+  fileInput?.addEventListener("change", async () => {
+    pickFile(fileInput.files?.[0] || null);
+  });
+
+  app?.addEventListener("dragenter", (e) => {
+    e.preventDefault();
+    dragCounter++;
+    dragOverlay?.classList.add("show");
+  });
+
+  app?.addEventListener("dragleave", (e) => {
+    e.preventDefault();
+    dragCounter--;
+    if (dragCounter <= 0) {
+      dragCounter = 0;
+      dragOverlay?.classList.remove("show");
+    }
+  });
+
+  app?.addEventListener("dragover", (e) => e.preventDefault());
+
+  app?.addEventListener("drop", async (e) => {
+    e.preventDefault();
+    dragCounter = 0;
+    dragOverlay?.classList.remove("show");
+
+    pickFile(e.dataTransfer.files?.[0] || null);
+  });
+
+  newChatBtn?.addEventListener("click", () => input?.focus());
+
+  renderAuthUI();
+  updateSendState();
+  loadRecentChats();
 });

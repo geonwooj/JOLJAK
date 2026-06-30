@@ -31,6 +31,21 @@ public class ChatMessage {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
+    @Column(name = "original_file_name")
+    private String originalFileName;
+
+    @Column(name = "stored_file_name")
+    private String storedFileName;
+
+    @Column(name = "file_path")
+    private String filePath;
+
+    @Column(name = "file_content_type")
+    private String fileContentType;
+
+    @Column(name = "file_size")
+    private Long fileSize;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -43,6 +58,28 @@ public class ChatMessage {
         this.content = content;
     }
 
+    public ChatMessage(
+            ChatRoom room,
+            Role role,
+            String userEmail,
+            String content,
+            String originalFileName,
+            String storedFileName,
+            String filePath,
+            String fileContentType,
+            Long fileSize
+    ) {
+        this.room = room;
+        this.role = role;
+        this.userEmail = userEmail;
+        this.content = content;
+        this.originalFileName = originalFileName;
+        this.storedFileName = storedFileName;
+        this.filePath = filePath;
+        this.fileContentType = fileContentType;
+        this.fileSize = fileSize;
+    }
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) createdAt = LocalDateTime.now();
@@ -53,5 +90,10 @@ public class ChatMessage {
     public Role getRole() { return role; }
     public String getUserEmail() { return userEmail; }
     public String getContent() { return content; }
+    public String getOriginalFileName() { return originalFileName; }
+    public String getStoredFileName() { return storedFileName; }
+    public String getFilePath() { return filePath; }
+    public String getFileContentType() { return fileContentType; }
+    public Long getFileSize() { return fileSize; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

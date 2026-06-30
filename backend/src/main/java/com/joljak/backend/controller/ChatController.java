@@ -8,10 +8,13 @@ import com.joljak.backend.dto.chat.ChatMessageResponse;
 import com.joljak.backend.dto.chat.ChatRoomResponse;
 import com.joljak.backend.dto.chat.StartChatRequest;
 import com.joljak.backend.service.ChatService;
+import com.joljak.backend.service.AnswerFormatService;
 import io.jsonwebtoken.JwtException;
 import jakarta.validation.Valid;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -22,15 +25,16 @@ public class ChatController {
 
     private final ChatService chatService;
     private final JwtUtil jwtUtil;
+    private final AnswerFormatService answerFormatService;
 
-    public ChatController(ChatService chatService, JwtUtil jwtUtil) {
+    public ChatController(ChatService chatService, JwtUtil jwtUtil, AnswerFormatService answerFormatService) {
         this.chatService = chatService;
         this.jwtUtil = jwtUtil;
+        this.answerFormatService = answerFormatService;
     }
 
-    // index.html에서 "첫 질문" 보내면 새 채팅방 만들고 저장
-    @PostMapping("/start")
-    public ResponseEntity<?> start(
+    @PostMapping(value = "/start", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> startJson(
             @RequestHeader(value = "Authorization", required = false) String authHeader,
             @Valid @RequestBody StartChatRequest req
     ) {
@@ -45,7 +49,23 @@ public class ChatController {
         }
     }
 
-    // 사이드바 "내 채팅" 최근 5개
+    @PostMapping(value = "/start", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> startMultipart(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestParam(value = "message", required = false) String message,
+            @RequestPart(value = "file", required = false) MultipartFile file
+    ) {
+        try {
+            String email = extractEmail(authHeader);
+            ChatRoom room = chatService.startChat(email, message, file);
+            return ResponseEntity.ok(Map.of("chatId", room.getId()));
+        } catch (JwtException e) {
+            return ResponseEntity.status(401).body("Unauthorized");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     @GetMapping("/recent")
     public ResponseEntity<?> recent(
             @RequestHeader(value = "Authorization", required = false) String authHeader
@@ -62,7 +82,6 @@ public class ChatController {
         }
     }
 
-    // chat.html에서 채팅방 메시지 로드
     @GetMapping("/{chatId}/messages")
     public ResponseEntity<?> messages(
             @RequestHeader(value = "Authorization", required = false) String authHeader,
@@ -72,7 +91,7 @@ public class ChatController {
             String email = extractEmail(authHeader);
             List<ChatMessageResponse> messages = chatService.getMessages(chatId, email)
                     .stream()
-                    .map(ChatMessageResponse::from)
+                    .map(answerFormatService::toResponse)
                     .toList();
             return ResponseEntity.ok(messages);
         } catch (JwtException e) {
@@ -82,9 +101,8 @@ public class ChatController {
         }
     }
 
-    // chat.html에서 추가 질문
-    @PostMapping("/{chatId}/messages")
-    public ResponseEntity<?> add(
+    @PostMapping(value = "/{chatId}/messages", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> addJson(
             @RequestHeader(value = "Authorization", required = false) String authHeader,
             @PathVariable Long chatId,
             @Valid @RequestBody AddMessageRequest req
@@ -92,7 +110,7 @@ public class ChatController {
         try {
             String email = extractEmail(authHeader);
             List<ChatMessage> all = chatService.addUserMessage(chatId, email, req.getMessage());
-            List<ChatMessageResponse> messages = all.stream().map(ChatMessageResponse::from).toList();
+            List<ChatMessageResponse> messages = all.stream().map(answerFormatService::toResponse).toList();
             return ResponseEntity.ok(messages);
         } catch (JwtException e) {
             return ResponseEntity.status(401).body("Unauthorized");
@@ -101,7 +119,25 @@ public class ChatController {
         }
     }
 
-    // ✅ 채팅방 삭제(메시지 포함)
+    @PostMapping(value = "/{chatId}/messages", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> addMultipart(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @PathVariable Long chatId,
+            @RequestParam(value = "message", required = false) String message,
+            @RequestPart(value = "file", required = false) MultipartFile file
+    ) {
+        try {
+            String email = extractEmail(authHeader);
+            List<ChatMessage> all = chatService.addUserMessage(chatId, email, message, file);
+            List<ChatMessageResponse> messages = all.stream().map(answerFormatService::toResponse).toList();
+            return ResponseEntity.ok(messages);
+        } catch (JwtException e) {
+            return ResponseEntity.status(401).body("Unauthorized");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     @DeleteMapping("/{chatId}")
     public ResponseEntity<?> delete(
             @RequestHeader(value = "Authorization", required = false) String authHeader,

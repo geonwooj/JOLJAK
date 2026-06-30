@@ -80,7 +80,7 @@ sendCodeBtn.addEventListener("click", async () => {
   setVerifyStatus("이메일을 발송하고 있습니다. 잠시만 기다려 주세요...", true);
 
   try {
-    const res = await fetch("http://127.0.0.1:8080/api/auth/email/send", {
+    const res = await fetch("http://15.164.30.127:8080/api/auth/email/send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
@@ -127,7 +127,7 @@ verifyCodeBtn.addEventListener("click", async () => {
   }
 
   try {
-    const res = await fetch("http://127.0.0.1:8080/api/auth/email/verify", {
+    const res = await fetch("http://15.164.30.127:8080/api/auth/email/verify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, code }),
@@ -185,7 +185,7 @@ form.addEventListener("submit", async (e) => {
   }
 
   try {
-    const response = await fetch("http://127.0.0.1:8080/api/auth/signup", {
+    const response = await fetch("http://15.164.30.127:8080/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
