@@ -12,37 +12,31 @@ from .detect import detect_tables, detect_equations
 from .ocr_engine import init_ocr_reader, ocr_pdf_page
 from .claims_fallback import fallback_extract_claims
 
-from paddleocr import PPStructure
 
 # ============================================================
 # Global structure engine (FULL MODE에서만 사용)
 # ============================================================
-structure_engine = None
-
-def init_structure_engine():
-    global structure_engine
-    if structure_engine is None:
-        structure_engine = PPStructure(table=True, ocr=True, lang="korean")
-    return structure_engine
-
 
 # ============================================================
 # 이미지 추출 (FULL MODE 전용)
 # ============================================================
+
 def extract_and_save_images(
     doc: fitz.Document,
     pdf_id: str,
     output_dir: str = "data/extracted_figures"
 ) -> list[dict]:
-
+    """
+    페이지별 이미지 추출을 병렬화.
+    fitz.Document 자체는 스레드 안전하지 않을 수 있으므로
+    페이지 핸들만 미리 추출해 각 스레드가 독립적으로 Pixmap을 생성하도록 한다.
+    """
     os.makedirs(output_dir, exist_ok=True)
-    image_list = []
 
-    for page_num in range(len(doc)):
+    def process_page(page_num: int) -> list[dict]:
         page = doc[page_num]
-        image_info_list = page.get_images(full=True)
-
-        for img_index, img in enumerate(image_info_list):
+        results = []
+        for img_index, img in enumerate(page.get_images(full=True)):
             xref = img[0]
             try:
                 pix = fitz.Pixmap(doc, xref)
@@ -57,18 +51,25 @@ def extract_and_save_images(
 
                 pix.save(img_path)
 
-                image_list.append({
+                results.append({
                     "page": page_num + 1,
                     "filename": img_filename,
                     "width": pix.width,
                     "height": pix.height,
                     "path": img_path,
                 })
-
                 pix = None
-
             except Exception as e:
                 print(f"이미지 추출 실패 (page {page_num+1}, xref {xref}): {e}")
+        return results
+
+    image_list = []
+    # PyMuPDF는 fitz.Document 객체 자체의 페이지 접근이 스레드 락 이슈를 일으킬 수 있어
+    # 안전하게 페이지 수만큼만 가벼운 병렬도(4)로 처리
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        futures = [executor.submit(process_page, n) for n in range(len(doc))]
+        for f in as_completed(futures):
+            image_list.extend(f.result())
 
     return image_list
 
@@ -78,20 +79,20 @@ def extract_and_save_images(
 # ============================================================
 def extract_text_pages(pages):
     """
-    - OCR은 최대 1회만 수행
-    - ThreadPool 사용 ❌ (OCR + 병렬은 역효과)
+    페이지별로 네이티브 텍스트 추출을 먼저 시도하고,
+    저품질(=스캔/이미지 페이지)일 때만 OCR을 수행한다.
+    OCR은 페이지마다 필요한 경우에 한해 여러 번 수행 가능하도록 수정
+    (기존 "최대 1회" 제한이 후반부 이미지 위주 문서에서 텍스트 누락을 유발할 수 있음).
     """
     full_text_parts = []
-    ocr_used = False
 
     for page in pages:
         text = page.get_text("text")
 
-        if is_low_quality_text(text) and not ocr_used:
+        if is_low_quality_text(text):
             try:
                 init_ocr_reader()
                 text = ocr_pdf_page(page)
-                ocr_used = True
             except Exception as e:
                 print(f"OCR 실패: {e}")
                 continue
