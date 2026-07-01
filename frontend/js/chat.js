@@ -16,6 +16,10 @@ document.addEventListener("DOMContentLoaded", () => {
     dragOverlay: $("dragOverlay"),
     aiStatus: $("aiStatus"),
     aiStatusText: $("aiStatusText"),
+    signalPanel: $("signalPanel"),
+    signalBadge: $("signalBadge"),
+    signalCurrent: $("signalCurrent"),
+    signalSteps: $("signalSteps"),
   };
 
   const params = new URLSearchParams(window.location.search);
@@ -127,6 +131,95 @@ document.addEventListener("DOMContentLoaded", () => {
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;")
       .replaceAll("'", "&#039;");
+  }
+
+  const SIGNAL_ORDER = [
+    "10000", "10001", "10002", "10003",
+    "20000", "20001",
+    "30000", "30001", "30002", "30003",
+    "40000", "40001",
+    "50000", "50001",
+  ];
+
+  const DEFAULT_SIGNAL_MESSAGES = {
+    "10000": "PDF 텍스트/섹션 추출 시작",
+    "10001": "PDF 텍스트/섹션 추출 완료",
+    "10002": "도면 캡션(LLaVA) 시작",
+    "10003": "도면 캡션(LLaVA) 완료",
+    "20000": "사용자 입력 → JSON 변환 시작",
+    "20001": "사용자 입력 → JSON 변환 완료",
+    "30000": "유사 특허 탐색 시작",
+    "30001": "유사 특허 top-5 검색 완료",
+    "30002": "문서별 재구조화 시작",
+    "30003": "문서별 재구조화 완료",
+    "40000": "독립 청구항 5회 생성 시작",
+    "40001": "독립 청구항 생성+클러스터링 완료",
+    "50000": "GPT 최종 답변 생성 시작",
+    "50001": "GPT 최종 답변 생성 완료",
+  };
+
+  function renderSignalPanel(status) {
+    if (!el.signalBadge || !el.signalCurrent || !el.signalSteps) return;
+
+    const code = String(status?.code || "IDLE");
+    const message = status?.message || "아직 진행 중인 작업이 없습니다.";
+    const running = !!status?.running;
+    const steps = status?.steps || DEFAULT_SIGNAL_MESSAGES;
+    const history = Array.isArray(status?.history) ? status.history : [];
+    const doneCodes = new Set(history.map((item) => String(item.code)));
+
+    el.signalBadge.classList.remove("is-running", "is-error");
+
+    if (code === "ERROR") {
+      el.signalBadge.textContent = "오류";
+      el.signalBadge.classList.add("is-error");
+    } else if (running) {
+      el.signalBadge.textContent = "진행 중";
+      el.signalBadge.classList.add("is-running");
+    } else if (code === "DONE") {
+      el.signalBadge.textContent = "완료";
+    } else {
+      el.signalBadge.textContent = "대기";
+    }
+
+    el.signalCurrent.textContent = message;
+
+    el.signalSteps.innerHTML = SIGNAL_ORDER.map((stepCode) => {
+      const stepMessage = steps[stepCode] || DEFAULT_SIGNAL_MESSAGES[stepCode] || "AI 작업 처리";
+      const isDone = doneCodes.has(stepCode);
+      const isCurrent = running && code === stepCode;
+
+      let className = "signal-step";
+      if (isDone) className += " is-done";
+      if (isCurrent) className += " is-current";
+
+      return `
+        <div class="${className}">
+          <span class="signal-step__dot">${isDone && !isCurrent ? "✓" : ""}</span>
+          <div>
+            <span class="signal-step__code">${stepCode}</span>
+            <span>${escapeHtml(stepMessage)}</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function resetSignalPanel() {
+    if (!el.signalBadge || !el.signalCurrent || !el.signalSteps) return;
+
+    el.signalBadge.classList.remove("is-running", "is-error");
+    el.signalBadge.textContent = "대기";
+    el.signalCurrent.textContent = "아직 진행 중인 작업이 없습니다.";
+    el.signalSteps.innerHTML = SIGNAL_ORDER.map((code) => `
+      <div class="signal-step">
+        <span class="signal-step__dot"></span>
+        <div>
+          <span class="signal-step__code">${code}</span>
+          <span>${escapeHtml(DEFAULT_SIGNAL_MESSAGES[code])}</span>
+        </div>
+      </div>
+    `).join("");
   }
 
   function formatPatentAnswer(rawText) {
@@ -492,6 +585,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       const status = await api.status();
+      renderSignalPanel(status);
 
       if (status.running) {
         showAiStatus(status.message);
@@ -687,6 +781,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function init() {
     renderAuthButton();
+    resetSignalPanel();
     updateSendState();
     bindEvents();
     await loadRecentChats();

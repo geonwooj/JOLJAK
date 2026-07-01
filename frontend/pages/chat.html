@@ -93,12 +93,30 @@
         </header>
 
         <!-- Chat content -->
-        <section class="chat">
-          <div class="chat-wrap" id="chatWrap"></div>
-          <div class="ai-status" id="aiStatus" hidden>
-            <span class="ai-status__spinner"></span>
-            <span class="ai-status__text" id="aiStatusText">AI가 답변을 생성 중입니다.</span>
-          </div>
+        <section class="chat-layout">
+          <section class="chat">
+            <div class="chat-wrap" id="chatWrap"></div>
+            <div class="ai-status" id="aiStatus" hidden>
+              <span class="ai-status__spinner"></span>
+              <span class="ai-status__text" id="aiStatusText">AI가 답변을 생성 중입니다.</span>
+            </div>
+          </section>
+
+          <aside class="signal-panel" id="signalPanel" aria-label="AI 진행 상태">
+            <div class="signal-panel__header">
+              <div>
+                <strong>AI 진행 상태</strong>
+                <p>시그널 처리 로그</p>
+              </div>
+              <span class="signal-panel__badge" id="signalBadge">대기</span>
+            </div>
+
+            <div class="signal-panel__current" id="signalCurrent">
+              아직 진행 중인 작업이 없습니다.
+            </div>
+
+            <div class="signal-panel__steps" id="signalSteps"></div>
+          </aside>
         </section>
 
         <!-- Bottom input -->
