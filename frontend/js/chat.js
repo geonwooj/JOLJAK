@@ -24,6 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const params = new URLSearchParams(window.location.search);
   const chatId = params.get("chatId");
+  const isNewChat = params.get("new") === "1";
 
   const state = {
     authConfirmed: false,
@@ -758,8 +759,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       await api.sendMessage(message, file);
+
+      stopStatusPolling();
+      hideAiStatus();
+
+      await loadMessages();
       await loadRecentChats();
-      await checkStatusOnce();
+
+      hideSignalPanel();
     } catch (err) {
       stopStatusPolling();
       hideAiStatus();
@@ -822,6 +829,13 @@ document.addEventListener("DOMContentLoaded", () => {
     bindEvents();
     await loadRecentChats();
     await loadMessages();
+
+    if (isNewChat && chatId) {
+      showAiStatus("AI 답변 생성을 준비 중입니다.", true);
+      resetSignalPanel();
+      showSignalPanel();
+      await startStatusPolling();
+    }
   }
 
   init();
