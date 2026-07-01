@@ -320,7 +320,6 @@ body {
   }
 }
 
-
 /* AI 진행 상태 패널 */
 .chat-layout {
   flex: 1 1 auto;
@@ -341,6 +340,10 @@ body {
   background: #ffffff;
   padding: 18px 16px;
   overflow-y: auto;
+}
+
+.signal-panel[hidden] {
+  display: none;
 }
 
 .signal-panel__header {
@@ -374,8 +377,8 @@ body {
 }
 
 .signal-panel__badge.is-running {
-  background: #dcfce7;
-  color: #166534;
+  background: #e5e7eb;
+  color: #111827;
 }
 
 .signal-panel__badge.is-error {
@@ -397,7 +400,7 @@ body {
 .signal-panel__steps {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
 }
 
 .signal-step {
@@ -416,10 +419,7 @@ body {
   border-radius: 50%;
   border: 2px solid #d1d5db;
   flex: 0 0 18px;
-  display: grid;
-  place-items: center;
-  font-size: 10px;
-  background: #fff;
+  background: #ffffff;
 }
 
 .signal-step.is-done {
@@ -427,9 +427,8 @@ body {
 }
 
 .signal-step.is-done .signal-step__dot {
-  border-color: #22c55e;
-  background: #22c55e;
-  color: white;
+  border-color: #111827;
+  background: #111827;
 }
 
 .signal-step.is-current {
@@ -438,21 +437,26 @@ body {
 }
 
 .signal-step.is-current .signal-step__dot {
-  border-color: #22c55e;
-  border-top-color: transparent;
-  animation: signalSpin 0.8s linear infinite;
+  border-color: #111827;
+  background: #111827;
+  box-shadow: 0 0 0 4px rgba(17, 24, 39, 0.12);
+  animation: signalPulse 0.9s ease-in-out infinite alternate;
 }
 
-.signal-step__code {
-  display: block;
-  font-size: 11px;
-  color: #6b7280;
-  margin-bottom: 2px;
+.signal-step__message {
+  padding-top: 1px;
+  word-break: keep-all;
 }
 
-@keyframes signalSpin {
+@keyframes signalPulse {
+  from {
+    transform: scale(1);
+    opacity: 0.75;
+  }
+
   to {
-    transform: rotate(360deg);
+    transform: scale(1.08);
+    opacity: 1;
   }
 }
 

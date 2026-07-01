@@ -32,6 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
     dragCounter: 0,
     statusTimer: null,
     isSending: false,
+    signalPanelActive: false,
   };
 
   const auth = {
@@ -144,42 +145,77 @@ document.addEventListener("DOMContentLoaded", () => {
   const DEFAULT_SIGNAL_MESSAGES = {
     "10000": "PDF 텍스트/섹션 추출 시작",
     "10001": "PDF 텍스트/섹션 추출 완료",
-    "10002": "도면 캡션(LLaVA) 시작",
-    "10003": "도면 캡션(LLaVA) 완료",
-    "20000": "사용자 입력 → JSON 변환 시작",
-    "20001": "사용자 입력 → JSON 변환 완료",
+    "10002": "도면 캡션 분석 시작",
+    "10003": "도면 캡션 분석 완료",
+    "20000": "사용자 입력 분석 시작",
+    "20001": "사용자 입력 분석 완료",
     "30000": "유사 특허 탐색 시작",
-    "30001": "유사 특허 top-5 검색 완료",
+    "30001": "유사 특허 검색 완료",
     "30002": "문서별 재구조화 시작",
     "30003": "문서별 재구조화 완료",
-    "40000": "독립 청구항 5회 생성 시작",
-    "40001": "독립 청구항 생성+클러스터링 완료",
-    "50000": "GPT 최종 답변 생성 시작",
-    "50001": "GPT 최종 답변 생성 완료",
+    "40000": "독립 청구항 생성 시작",
+    "40001": "독립 청구항 생성 완료",
+    "50000": "최종 답변 생성 시작",
+    "50001": "최종 답변 생성 완료",
   };
 
+  function showSignalPanel() {
+    if (!el.signalPanel) return;
+    state.signalPanelActive = true;
+    el.signalPanel.hidden = false;
+    el.signalPanel.classList.add("is-visible");
+  }
+
+  function hideSignalPanel() {
+    if (!el.signalPanel) return;
+    state.signalPanelActive = false;
+    el.signalPanel.classList.remove("is-visible");
+    el.signalPanel.hidden = true;
+  }
+
+  function resetSignalPanel() {
+    if (!el.signalBadge || !el.signalCurrent || !el.signalSteps) return;
+
+    el.signalBadge.classList.remove("is-running", "is-error");
+    el.signalBadge.textContent = "대기";
+    el.signalCurrent.textContent = "AI 답변 생성을 준비 중입니다.";
+
+    el.signalSteps.innerHTML = SIGNAL_ORDER.map((code) => `
+      <div class="signal-step">
+        <span class="signal-step__dot"></span>
+        <div class="signal-step__message">${escapeHtml(DEFAULT_SIGNAL_MESSAGES[code])}</div>
+      </div>
+    `).join("");
+  }
+
   function renderSignalPanel(status) {
+    if (!state.signalPanelActive) return;
     if (!el.signalBadge || !el.signalCurrent || !el.signalSteps) return;
 
     const code = String(status?.code || "IDLE");
-    const message = status?.message || "아직 진행 중인 작업이 없습니다.";
+    const message = status?.message || "AI 작업을 처리 중입니다.";
     const running = !!status?.running;
     const steps = status?.steps || DEFAULT_SIGNAL_MESSAGES;
     const history = Array.isArray(status?.history) ? status.history : [];
-    const doneCodes = new Set(history.map((item) => String(item.code)));
+
+    const doneCodes = new Set(
+      history
+        .map((item) => String(item.code))
+        .filter((itemCode) => SIGNAL_ORDER.includes(itemCode))
+    );
+
+    if (SIGNAL_ORDER.includes(code)) {
+      doneCodes.add(code);
+    }
 
     el.signalBadge.classList.remove("is-running", "is-error");
 
     if (code === "ERROR") {
       el.signalBadge.textContent = "오류";
       el.signalBadge.classList.add("is-error");
-    } else if (running) {
+    } else {
       el.signalBadge.textContent = "진행 중";
       el.signalBadge.classList.add("is-running");
-    } else if (code === "DONE") {
-      el.signalBadge.textContent = "완료";
-    } else {
-      el.signalBadge.textContent = "대기";
     }
 
     el.signalCurrent.textContent = message;
@@ -195,31 +231,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       return `
         <div class="${className}">
-          <span class="signal-step__dot">${isDone && !isCurrent ? "✓" : ""}</span>
-          <div>
-            <span class="signal-step__code">${stepCode}</span>
-            <span>${escapeHtml(stepMessage)}</span>
-          </div>
+          <span class="signal-step__dot"></span>
+          <div class="signal-step__message">${escapeHtml(stepMessage)}</div>
         </div>
       `;
     }).join("");
-  }
-
-  function resetSignalPanel() {
-    if (!el.signalBadge || !el.signalCurrent || !el.signalSteps) return;
-
-    el.signalBadge.classList.remove("is-running", "is-error");
-    el.signalBadge.textContent = "대기";
-    el.signalCurrent.textContent = "아직 진행 중인 작업이 없습니다.";
-    el.signalSteps.innerHTML = SIGNAL_ORDER.map((code) => `
-      <div class="signal-step">
-        <span class="signal-step__dot"></span>
-        <div>
-          <span class="signal-step__code">${code}</span>
-          <span>${escapeHtml(DEFAULT_SIGNAL_MESSAGES[code])}</span>
-        </div>
-      </div>
-    `).join("");
   }
 
   function formatPatentAnswer(rawText) {
@@ -585,7 +601,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       const status = await api.status();
-      renderSignalPanel(status);
+
+      if (state.signalPanelActive) {
+        renderSignalPanel(status);
+      }
 
       if (status.running) {
         showAiStatus(status.message);
@@ -594,25 +613,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (status.code === "DONE") {
         hideAiStatus();
+        stopStatusPolling();
         await loadMessages();
         await loadRecentChats();
+        hideSignalPanel();
         return false;
       }
 
       if (status.code === "ERROR") {
         showAiStatus(status.message || "AI 답변 생성 중 오류가 발생했습니다.");
+        stopStatusPolling();
+
         setTimeout(async () => {
           hideAiStatus();
           await loadMessages();
+          hideSignalPanel();
         }, 1000);
+
         return false;
       }
 
-      hideAiStatus();
-      return false;
+      return state.signalPanelActive;
     } catch {
-      hideAiStatus();
-      return false;
+      return state.signalPanelActive;
     }
   }
 
@@ -721,14 +744,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
     state.isSending = true;
     updateSendState();
-    showAiStatus("AI 답변 생성을 준비 중입니다.");
+
+    showAiStatus("AI 답변 생성을 준비 중입니다.", true);
+    resetSignalPanel();
+    showSignalPanel();
+
+    stopStatusPolling();
+    state.statusTimer = setInterval(async () => {
+      if (!(await checkStatusOnce())) {
+        stopStatusPolling();
+      }
+    }, 1000);
 
     try {
       await api.sendMessage(message, file);
       await loadRecentChats();
-      await startStatusPolling();
+      await checkStatusOnce();
     } catch (err) {
+      stopStatusPolling();
       hideAiStatus();
+      hideSignalPanel();
       alertError("전송 실패", err);
     } finally {
       state.isSending = false;
@@ -782,11 +817,11 @@ document.addEventListener("DOMContentLoaded", () => {
   async function init() {
     renderAuthButton();
     resetSignalPanel();
+    hideSignalPanel();
     updateSendState();
     bindEvents();
     await loadRecentChats();
     await loadMessages();
-    await startStatusPolling();
   }
 
   init();
