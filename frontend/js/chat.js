@@ -160,6 +160,48 @@ document.addEventListener("DOMContentLoaded", () => {
     "50001": "최종 답변 생성 완료",
   };
 
+  const RUNNING_MESSAGE_BY_CODE = {
+    START: "AI 답변 생성을 준비 중입니다.",
+    "10000": "PDF 내용을 분석하는 중입니다.",
+    "10001": "PDF 내용을 분석하는 중입니다.",
+    "10002": "도면 정보를 분석하는 중입니다.",
+    "10003": "도면 정보를 분석하는 중입니다.",
+    "20000": "사용자 입력을 분석하는 중입니다.",
+    "20001": "사용자 입력을 분석하는 중입니다.",
+    "30000": "유사 특허를 탐색하는 중입니다.",
+    "30001": "유사 특허를 탐색하는 중입니다.",
+    "30002": "유사 문서를 재구조화하는 중입니다.",
+    "30003": "유사 문서를 재구조화하는 중입니다.",
+    "40000": "독립 청구항을 생성하는 중입니다.",
+    "40001": "독립 청구항을 생성하는 중입니다.",
+    "50000": "최종 답변을 생성하는 중입니다.",
+    "50001": "최종 답변을 정리하는 중입니다.",
+  };
+
+  function displayProgressMessage(status) {
+    const code = String(status?.code || "IDLE");
+
+    if (code === "ERROR") return status?.message || "AI 답변 생성 중 오류가 발생했습니다.";
+    if (code === "DONE") return "AI 답변 생성이 완료되었습니다.";
+
+    return RUNNING_MESSAGE_BY_CODE[code] || status?.message || "AI 작업을 처리 중입니다.";
+  }
+
+  function completedSignalCodes(status) {
+    const code = String(status?.code || "IDLE");
+    const history = Array.isArray(status?.history) ? status.history : [];
+    const doneCodes = new Set(
+      history
+        .map((item) => String(item.code))
+        .filter((itemCode) => SIGNAL_ORDER.includes(itemCode))
+    );
+
+    if (SIGNAL_ORDER.includes(code)) doneCodes.add(code);
+    if (code === "DONE") SIGNAL_ORDER.forEach((itemCode) => doneCodes.add(itemCode));
+
+    return doneCodes;
+  }
+
   function showSignalPanel() {
     if (!el.signalPanel) return;
     state.signalPanelActive = true;
@@ -178,7 +220,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!el.signalBadge || !el.signalCurrent || !el.signalSteps) return;
 
     el.signalBadge.classList.remove("is-running", "is-error");
-    el.signalBadge.textContent = "대기";
+    el.signalBadge.textContent = "진행 중";
     el.signalCurrent.textContent = "AI 답변 생성을 준비 중입니다.";
 
     el.signalSteps.innerHTML = SIGNAL_ORDER.map((code) => `
@@ -194,20 +236,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!el.signalBadge || !el.signalCurrent || !el.signalSteps) return;
 
     const code = String(status?.code || "IDLE");
-    const message = status?.message || "AI 작업을 처리 중입니다.";
     const running = !!status?.running;
     const steps = status?.steps || DEFAULT_SIGNAL_MESSAGES;
-    const history = Array.isArray(status?.history) ? status.history : [];
-
-    const doneCodes = new Set(
-      history
-        .map((item) => String(item.code))
-        .filter((itemCode) => SIGNAL_ORDER.includes(itemCode))
-    );
-
-    if (SIGNAL_ORDER.includes(code)) {
-      doneCodes.add(code);
-    }
+    const doneCodes = completedSignalCodes(status);
 
     el.signalBadge.classList.remove("is-running", "is-error");
 
@@ -215,11 +246,11 @@ document.addEventListener("DOMContentLoaded", () => {
       el.signalBadge.textContent = "오류";
       el.signalBadge.classList.add("is-error");
     } else {
-      el.signalBadge.textContent = "진행 중";
+      el.signalBadge.textContent = running ? "진행 중" : "정리 중";
       el.signalBadge.classList.add("is-running");
     }
 
-    el.signalCurrent.textContent = message;
+    el.signalCurrent.textContent = displayProgressMessage(status);
 
     el.signalSteps.innerHTML = SIGNAL_ORDER.map((stepCode) => {
       const stepMessage = steps[stepCode] || DEFAULT_SIGNAL_MESSAGES[stepCode] || "AI 작업 처리";
@@ -238,6 +269,7 @@ document.addEventListener("DOMContentLoaded", () => {
       `;
     }).join("");
   }
+
 
   function formatPatentAnswer(rawText) {
     let text = String(rawText ?? "").trim();
@@ -297,7 +329,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     text = text.replace(/\n{3,}/g, "\n\n").trim();
 
-    const escaped = escapeHtml(text);
+    const escaped = escapeHtml(text).replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
     const lines = escaped.split("\n").map((line) => line.trim());
 
     const html = [];
@@ -367,12 +399,12 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       // bullet
-      if (/^- /.test(line)) {
+      if (/^[-*] /.test(line)) {
         if (!listOpen) {
           html.push('<ul class="answer-list">');
           listOpen = true;
         }
-        html.push(`<li>${line.replace(/^- /, "")}</li>`);
+        html.push(`<li>${line.replace(/^[-*] /, "")}</li>`);
         continue;
       }
 
@@ -608,7 +640,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       if (status.running) {
-        showAiStatus(status.message);
+        showAiStatus(displayProgressMessage(status));
         return true;
       }
 
