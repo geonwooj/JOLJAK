@@ -319,3 +319,277 @@ body {
     opacity: 1;
   }
 }
+
+/* AI 진행 상태 패널 */
+.chat-layout {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+.chat-layout .chat {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.signal-panel {
+  width: 320px;
+  flex: 0 0 320px;
+  border-left: 1px solid #e5e7eb;
+  background: #ffffff;
+  padding: 18px 16px;
+  overflow-y: auto;
+}
+
+.signal-panel[hidden] {
+  display: none;
+}
+
+.signal-panel__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.signal-panel__header strong {
+  display: block;
+  font-size: 16px;
+  color: #111827;
+}
+
+.signal-panel__header p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.signal-panel__badge {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.signal-panel__badge.is-running {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.signal-panel__badge.is-error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.signal-panel__current {
+  padding: 12px;
+  border-radius: 12px;
+  background: #f9fafb;
+  color: #111827;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 16px;
+  border: 1px solid #e5e7eb;
+}
+
+.signal-panel__steps {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.signal-step {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  color: #9ca3af;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.signal-step__dot {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  border-radius: 50%;
+  border: 2px solid #d1d5db;
+  flex: 0 0 18px;
+  background: #ffffff;
+}
+
+.signal-step.is-done {
+  color: #111827;
+}
+
+.signal-step.is-done .signal-step__dot {
+  border-color: #111827;
+  background: #111827;
+}
+
+.signal-step.is-current {
+  color: #111827;
+  font-weight: 700;
+}
+
+.signal-step.is-current .signal-step__dot {
+  border-color: #111827;
+  background: #111827;
+  box-shadow: 0 0 0 4px rgba(17, 24, 39, 0.12);
+  animation: signalPulse 0.9s ease-in-out infinite alternate;
+}
+
+.signal-step__message {
+  padding-top: 1px;
+  word-break: keep-all;
+}
+
+@keyframes signalPulse {
+  from {
+    transform: scale(1);
+    opacity: 0.75;
+  }
+
+  to {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 1000px) {
+  .signal-panel {
+    display: none;
+  }
+}
+
+
+/* v4: 답변 가독성 개선 + 진행 패널 정리 */
+.msg__bubble--a {
+  max-width: 980px;
+}
+
+.msg__text--formatted {
+  max-width: 920px;
+  font-size: 15.5px;
+  line-height: 1.85;
+  color: #111827;
+}
+
+.msg__text--formatted strong {
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.msg__text--formatted p {
+  margin: 0 0 14px;
+}
+
+.answer-heading {
+  margin: 30px 0 16px;
+  padding: 14px 18px;
+  border: 1px solid #e5e7eb;
+  border-left: 5px solid #111827;
+  border-radius: 14px;
+  background: #f8fafc;
+  font-size: 18px;
+  font-weight: 900;
+  color: #111827;
+}
+
+.answer-heading:first-child {
+  margin-top: 0;
+}
+
+.answer-subheading {
+  margin: 22px 0 10px;
+  padding-left: 10px;
+  border-left: 3px solid #cbd5e1;
+  font-size: 16px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.answer-list {
+  margin: 10px 0 18px;
+  padding: 12px 16px 12px 34px;
+  border-radius: 12px;
+  background: #fafafa;
+  border: 1px solid #eef0f3;
+}
+
+.answer-list li {
+  margin: 8px 0;
+  line-height: 1.8;
+}
+
+.answer-claim-title {
+  margin: 26px 0 12px;
+  padding: 12px 16px;
+  border-left: 5px solid #111827;
+  border-radius: 12px;
+  background: #f3f4f6;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.answer-claim-ref {
+  margin: 8px 0 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f9fafb;
+  color: #374151;
+  font-weight: 700;
+}
+
+.signal-panel {
+  width: 340px;
+  flex-basis: 340px;
+  padding: 20px 18px;
+}
+
+.signal-panel__current {
+  font-weight: 700;
+  background: #ffffff;
+  border: 1px solid #dfe3ea;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.signal-panel__steps {
+  gap: 12px;
+}
+
+.signal-step {
+  color: #a3aab8;
+  transition: color 0.15s ease;
+}
+
+.signal-step__dot {
+  position: relative;
+  width: 17px;
+  height: 17px;
+  flex-basis: 17px;
+  border-color: #cfd5df;
+}
+
+.signal-step.is-done {
+  color: #111827;
+}
+
+.signal-step.is-done .signal-step__dot {
+  border-color: #111827;
+  background: #111827;
+}
+
+.signal-step.is-current .signal-step__dot {
+  border-color: #111827;
+  background: #111827;
+  box-shadow: 0 0 0 5px rgba(17, 24, 39, 0.12);
+}
+
+.signal-step.is-current .signal-step__message {
+  font-weight: 800;
+}

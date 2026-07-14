@@ -16,10 +16,15 @@ document.addEventListener("DOMContentLoaded", () => {
     dragOverlay: $("dragOverlay"),
     aiStatus: $("aiStatus"),
     aiStatusText: $("aiStatusText"),
+    signalPanel: $("signalPanel"),
+    signalBadge: $("signalBadge"),
+    signalCurrent: $("signalCurrent"),
+    signalSteps: $("signalSteps"),
   };
 
   const params = new URLSearchParams(window.location.search);
   const chatId = params.get("chatId");
+  const isNewChat = params.get("new") === "1";
 
   const state = {
     authConfirmed: false,
@@ -28,6 +33,7 @@ document.addEventListener("DOMContentLoaded", () => {
     dragCounter: 0,
     statusTimer: null,
     isSending: false,
+    signalPanelActive: false,
   };
 
   const auth = {
@@ -129,6 +135,142 @@ document.addEventListener("DOMContentLoaded", () => {
       .replaceAll("'", "&#039;");
   }
 
+  const SIGNAL_ORDER = [
+    "10000", "10001", "10002", "10003",
+    "20000", "20001",
+    "30000", "30001", "30002", "30003",
+    "40000", "40001",
+    "50000", "50001",
+  ];
+
+  const DEFAULT_SIGNAL_MESSAGES = {
+    "10000": "PDF 텍스트/섹션 추출 시작",
+    "10001": "PDF 텍스트/섹션 추출 완료",
+    "10002": "도면 캡션 분석 시작",
+    "10003": "도면 캡션 분석 완료",
+    "20000": "사용자 입력 분석 시작",
+    "20001": "사용자 입력 분석 완료",
+    "30000": "유사 특허 탐색 시작",
+    "30001": "유사 특허 검색 완료",
+    "30002": "문서별 재구조화 시작",
+    "30003": "문서별 재구조화 완료",
+    "40000": "독립 청구항 생성 시작",
+    "40001": "독립 청구항 생성 완료",
+    "50000": "최종 답변 생성 시작",
+    "50001": "최종 답변 생성 완료",
+  };
+
+  const RUNNING_MESSAGE_BY_CODE = {
+    START: "AI 답변 생성을 준비 중입니다.",
+    "10000": "PDF 내용을 분석하는 중입니다.",
+    "10001": "PDF 내용을 분석하는 중입니다.",
+    "10002": "도면 정보를 분석하는 중입니다.",
+    "10003": "도면 정보를 분석하는 중입니다.",
+    "20000": "사용자 입력을 분석하는 중입니다.",
+    "20001": "사용자 입력을 분석하는 중입니다.",
+    "30000": "유사 특허를 탐색하는 중입니다.",
+    "30001": "유사 특허를 탐색하는 중입니다.",
+    "30002": "유사 문서를 재구조화하는 중입니다.",
+    "30003": "유사 문서를 재구조화하는 중입니다.",
+    "40000": "독립 청구항을 생성하는 중입니다.",
+    "40001": "독립 청구항을 생성하는 중입니다.",
+    "50000": "최종 답변을 생성하는 중입니다.",
+    "50001": "최종 답변을 정리하는 중입니다.",
+  };
+
+  function displayProgressMessage(status) {
+    const code = String(status?.code || "IDLE");
+
+    if (code === "ERROR") return status?.message || "AI 답변 생성 중 오류가 발생했습니다.";
+    if (code === "DONE") return "AI 답변 생성이 완료되었습니다.";
+
+    return RUNNING_MESSAGE_BY_CODE[code] || status?.message || "AI 작업을 처리 중입니다.";
+  }
+
+  function completedSignalCodes(status) {
+    const code = String(status?.code || "IDLE");
+    const history = Array.isArray(status?.history) ? status.history : [];
+    const doneCodes = new Set(
+      history
+        .map((item) => String(item.code))
+        .filter((itemCode) => SIGNAL_ORDER.includes(itemCode))
+    );
+
+    if (SIGNAL_ORDER.includes(code)) doneCodes.add(code);
+    if (code === "DONE") SIGNAL_ORDER.forEach((itemCode) => doneCodes.add(itemCode));
+
+    return doneCodes;
+  }
+
+  function showSignalPanel() {
+    if (!el.signalPanel) return;
+    state.signalPanelActive = true;
+    el.signalPanel.hidden = false;
+    el.signalPanel.classList.add("is-visible");
+  }
+
+  function hideSignalPanel() {
+    if (!el.signalPanel) return;
+    state.signalPanelActive = false;
+    el.signalPanel.classList.remove("is-visible");
+    el.signalPanel.hidden = true;
+  }
+
+  function resetSignalPanel() {
+    if (!el.signalBadge || !el.signalCurrent || !el.signalSteps) return;
+
+    el.signalBadge.classList.remove("is-running", "is-error");
+    el.signalBadge.textContent = "진행 중";
+    el.signalCurrent.textContent = "AI 답변 생성을 준비 중입니다.";
+
+    el.signalSteps.innerHTML = SIGNAL_ORDER.map((code) => `
+      <div class="signal-step">
+        <span class="signal-step__dot"></span>
+        <div class="signal-step__message">${escapeHtml(DEFAULT_SIGNAL_MESSAGES[code])}</div>
+      </div>
+    `).join("");
+  }
+
+  function renderSignalPanel(status) {
+    if (!state.signalPanelActive) return;
+    if (!el.signalBadge || !el.signalCurrent || !el.signalSteps) return;
+
+    const code = String(status?.code || "IDLE");
+    const running = !!status?.running;
+    const steps = status?.steps || DEFAULT_SIGNAL_MESSAGES;
+    const doneCodes = completedSignalCodes(status);
+
+    el.signalBadge.classList.remove("is-running", "is-error");
+
+    if (code === "ERROR") {
+      el.signalBadge.textContent = "오류";
+      el.signalBadge.classList.add("is-error");
+    } else {
+      el.signalBadge.textContent = running ? "진행 중" : "정리 중";
+      el.signalBadge.classList.add("is-running");
+    }
+
+    el.signalCurrent.textContent = displayProgressMessage(status);
+
+    el.signalSteps.innerHTML = SIGNAL_ORDER.map((stepCode) => {
+      const stepMessage = steps[stepCode] || DEFAULT_SIGNAL_MESSAGES[stepCode] || "AI 작업 처리";
+      const isDone = doneCodes.has(stepCode);
+      const isCurrent = running && code === stepCode;
+
+      let className = "signal-step";
+      if (isDone) className += " is-done";
+      if (isCurrent) className += " is-current";
+
+      return `
+        <div class="${className}">
+          <span class="signal-step__dot"></span>
+          <div class="signal-step__message">${escapeHtml(stepMessage)}</div>
+        </div>
+      `;
+    }).join("");
+  }
+
+
   function formatPatentAnswer(rawText) {
     let text = String(rawText ?? "").trim();
     if (!text) return "";
@@ -187,7 +329,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     text = text.replace(/\n{3,}/g, "\n\n").trim();
 
-    const escaped = escapeHtml(text);
+    const escaped = escapeHtml(text).replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
     const lines = escaped.split("\n").map((line) => line.trim());
 
     const html = [];
@@ -257,12 +399,12 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       // bullet
-      if (/^- /.test(line)) {
+      if (/^[-*] /.test(line)) {
         if (!listOpen) {
           html.push('<ul class="answer-list">');
           listOpen = true;
         }
-        html.push(`<li>${line.replace(/^- /, "")}</li>`);
+        html.push(`<li>${line.replace(/^[-*] /, "")}</li>`);
         continue;
       }
 
@@ -493,32 +635,40 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const status = await api.status();
 
+      if (state.signalPanelActive) {
+        renderSignalPanel(status);
+      }
+
       if (status.running) {
-        showAiStatus(status.message);
+        showAiStatus(displayProgressMessage(status));
         return true;
       }
 
       if (status.code === "DONE") {
         hideAiStatus();
+        stopStatusPolling();
         await loadMessages();
         await loadRecentChats();
+        hideSignalPanel();
         return false;
       }
 
       if (status.code === "ERROR") {
         showAiStatus(status.message || "AI 답변 생성 중 오류가 발생했습니다.");
+        stopStatusPolling();
+
         setTimeout(async () => {
           hideAiStatus();
           await loadMessages();
+          hideSignalPanel();
         }, 1000);
+
         return false;
       }
 
-      hideAiStatus();
-      return false;
+      return state.signalPanelActive;
     } catch {
-      hideAiStatus();
-      return false;
+      return state.signalPanelActive;
     }
   }
 
@@ -627,14 +777,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
     state.isSending = true;
     updateSendState();
-    showAiStatus("AI 답변 생성을 준비 중입니다.");
+
+    showAiStatus("AI 답변 생성을 준비 중입니다.", true);
+    resetSignalPanel();
+    showSignalPanel();
+
+    stopStatusPolling();
+    state.statusTimer = setInterval(async () => {
+      if (!(await checkStatusOnce())) {
+        stopStatusPolling();
+      }
+    }, 1000);
 
     try {
       await api.sendMessage(message, file);
-      await loadRecentChats();
-      await startStatusPolling();
-    } catch (err) {
+
+      stopStatusPolling();
       hideAiStatus();
+
+      await loadMessages();
+      await loadRecentChats();
+
+      hideSignalPanel();
+    } catch (err) {
+      stopStatusPolling();
+      hideAiStatus();
+      hideSignalPanel();
       alertError("전송 실패", err);
     } finally {
       state.isSending = false;
@@ -687,11 +855,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function init() {
     renderAuthButton();
+    resetSignalPanel();
+    hideSignalPanel();
     updateSendState();
     bindEvents();
     await loadRecentChats();
     await loadMessages();
-    await startStatusPolling();
+
+    if (isNewChat && chatId) {
+      showAiStatus("AI 답변 생성을 준비 중입니다.", true);
+      resetSignalPanel();
+      showSignalPanel();
+      await startStatusPolling();
+    }
   }
 
   init();
