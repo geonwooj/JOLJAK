@@ -1520,6 +1520,10 @@ description clean: 본 발명은, 일 실시예에 따르면, 예를 들어, 예
             print("\n" + "="*60 + "\nPhase 0: 입력 정규화 (임베딩 공간 투영)\n" + "="*60)
             sectioned = self.phase0_normalize_input(raw_input, few_shots)
             domain    = sectioned.get("type", "Ai")
+            
+            
+            domain = verify_domain(raw_input, domain)
+            
             print(f"[Phase0] 도메인: {domain}  이유: {sectioned.get('type_reason','')}")
 
 
