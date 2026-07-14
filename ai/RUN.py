@@ -80,7 +80,96 @@ CLAIMS_STOPWORDS_STRONG = [
     "제 3 항에 있어서", "제3항에 있어서",
     "삭제", "단계", "수단", "모듈", "복수의",
 ]
+DOMAIN_KEYWORDS = {
+    "Ai":            ["인공지능", "딥러닝", "머신러닝", "신경망", "학습모델",
+                      "강화학습", "자연어처리", "이미지인식"],
+    "BigData":       ["빅데이터", "분산처리", "하둡", "스파크", "데이터레이크",
+                      "데이터웨어하우스", "스트리밍", "배치처리"],
+    "InfoComm":      ["통신", "네트워크", "프로토콜", "패킷", "무선",
+                      "기지국", "단말기", "송수신"],
+    "Semiconductor": ["반도체", "트렌치", "도핑", "에칭", "산화막",
+                      "웨이퍼", "포토리소그래피", "게이트"],
+}
 
+def extract_generated_indep_claim(final_claims_text: str) -> str:
+    """
+    Phase 3 Area Chair 출력(final_claims.txt)에서 최종 독립항 추출.
+
+    Area Chair 출력 형식:
+        [2. 최종 독립항]
+        제1항. ...
+        [3. 종속항 계층]
+        ...
+
+    이 형식은 "청구항 N" 헤더가 아니라 "제N항." 형식이므로
+    split_claims_into_items()로는 독립항을 정확히 추출할 수 없다.
+    """
+    # 1순위: "[2. 최종 독립항]" 섹션 → "제1항." 본문 추출
+    m = re.search(
+        r"\[2\.\s*최종\s*독립항\](.*?)(?=\[3\.\s*종속항|\Z)",
+        final_claims_text, re.S
+    )
+    if m:
+        block = m.group(1).strip()
+        m2 = re.search(r"제\s*1\s*항\s*[\.．]?\s*(.+)", block, re.S)
+        if m2:
+            text = m2.group(1).strip()
+            # 제2항 시작 전까지만
+            m3 = re.search(r"\n제\s*[2-9]\s*항", text)
+            if m3:
+                text = text[:m3.start()].strip()
+            return text
+
+    # 2순위: 전체 텍스트에서 "제1항." 패턴 탐색
+    m = re.search(
+        r"제\s*1\s*항\s*[\.．]?\s*(.+?)(?=\n제\s*[2-9]\s*항|\Z)",
+        final_claims_text, re.S
+    )
+    if m:
+        return m.group(1).strip()
+
+    # 3순위: fallback — split_claims_into_items
+    items = split_claims_into_items(final_claims_text)
+    for item in items:
+        if item["is_independent"]:
+            return item["text"]
+    return items[0]["text"] if items else ""
+
+def verify_domain(raw_input: str, classified_domain: str) -> str:
+    """
+    Phase 0 LLM 분류 도메인을 원문 키워드 기반으로 교차 검증.
+
+    LLM이 PDF 파싱 텍스트를 잘못된 도메인으로 분류하면
+    이후 모든 Phase의 NPZ 검색/임베딩 기준이 통째로 틀어지므로,
+    원문에 등장하는 도메인별 키워드 점수로 2차 검증한다.
+
+    키워드가 전혀 없으면(판별 불가) LLM 분류를 그대로 신뢰하고,
+    키워드 기반 최고점 도메인이 LLM 분류와 다르면 override한다.
+    """
+    keyword_scores = {
+        domain: sum(1 for kw in keywords if kw in raw_input)
+        for domain, keywords in DOMAIN_KEYWORDS.items()
+    }
+
+    best_kw_domain = max(keyword_scores, key=keyword_scores.get)
+    best_score     = keyword_scores[best_kw_domain]
+
+    if best_score == 0:
+        print(f"[Phase0] 키워드 기반 도메인 판별 불가 (점수 0) "
+              f"→ LLM 분류 '{classified_domain}' 유지")
+        return classified_domain
+
+    if best_kw_domain != classified_domain:
+        print(f"[Phase0] ⚠️  도메인 불일치 감지!")
+        print(f"  LLM 분류:    {classified_domain}")
+        print(f"  키워드 기반: {best_kw_domain} "
+              f"(점수: {best_score}, 전체: {keyword_scores})")
+        print(f"  → 키워드 기반 도메인으로 override: {best_kw_domain}")
+        return best_kw_domain
+
+    print(f"[Phase0] ✓ 도메인 교차검증 일치: {classified_domain} "
+          f"(키워드 점수: {best_score})")
+    return classified_domain
 # ════════════════════════════════════════════════════════════════
 # 한글 폰트 자동 감지
 # ════════════════════════════════════════════════════════════════
@@ -1286,6 +1375,9 @@ class ThreePhaseClaimPipeline:
     # ── Phase 0 ──────────────────────────────────────────────
     def phase0_normalize_input(self, raw_input: str, few_shots: list) -> dict:
         """
+
+domain = _verify_domain(raw_input, domain)  # ← 추가: 교차 검증
+print(f"[Phase0] 최종 도메인: {domain}")
         사용자 자유 형식 입력을 KorPatBERT 형식(섹션화 JSON)으로 정규화.
         이 단계는 단순 전처리가 아니라, 사용자 입력을 KorPatBERT가 학습한
         임베딩 공간의 좌표계로 투영하기 위한 표현 변환이다.
@@ -1430,6 +1522,9 @@ description clean: 본 발명은, 일 실시예에 따르면, 예를 들어, 예
             domain    = sectioned.get("type", "Ai")
             print(f"[Phase0] 도메인: {domain}  이유: {sectioned.get('type_reason','')}")
 
+
+            domain = _verify_domain(raw_input, domain)  # ← 추가: 교차 검증
+            print(f"[Phase0] 최종 도메인: {domain}")
             user_claim_items = split_claims_into_items(sectioned["claims"]["raw"])
             print(f"[Phase0] 사용자 청구항 {len(user_claim_items)}개 항으로 분리됨")
             print(f"\n[진단] Phase 0 claims.raw 원문 (앞 800자):")
