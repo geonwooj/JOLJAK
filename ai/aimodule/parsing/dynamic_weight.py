@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from scipy.special import softmax
+from .section_centering import l2_normalize_rows
 
 def pairwise_in_out_stats(vectors, labels, domain_order, target_domain=None):
     vectors = l2_normalize_rows(vectors)

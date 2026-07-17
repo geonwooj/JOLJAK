@@ -41,7 +41,16 @@ DATA_ROOT          = "data"
 MODEL_PATH         = Path("models/KorPatBERT/pytorch")
 VOCAB_PATH         = MODEL_PATH.parent / "pretrained" / "korpat_vocab.txt"
 HF_MODEL_DIR       = str(MODEL_PATH)
-NPZ_PATH           = Path("data/npz_korpat_rebuilt")
+
+# "auto" 백엔드(AutoTokenizer/AutoModel) 전용 모델 폴더.
+# models/KorPatBERT/pytorch/ 안에 tokenizer.json + tokenizer_config.json +
+# model.safetensors + config.json이 이미 다 있으므로 기본값은 MODEL_PATH와
+# 동일하다. (이전에 별도 폴더가 필요하다고 잘못 추측했었음 — 실제로는
+# 폴더가 아니라 그 tokenizer.json 자체의 vocab 내용이 문제였다.)
+# 만약 별도로 변환해둔 HF 체크포인트가 따로 있다면 여기 경로만 바꾸면 된다.
+HF_MODEL_DIR_AUTO  = str(MODEL_PATH)
+
+NPZ_PATH           = Path("data/npz_backup_v1_desc_full_minus_background_centering_dynamic_weight")
 JSON_PATH          = Path("data/reprocessed")
 FEW_SHOT_PATH      = Path("data")
 RUN_OUTPUT_DIR     = Path("data/run_outputs")   # phase별 중간 산출물 저장 위치
@@ -49,7 +58,21 @@ RUN_OUTPUT_DIR     = Path("data/run_outputs")   # phase별 중간 산출물 저�
 CHUNK_SIZE         = 256
 STRIDE             = 256
 MAX_CHUNKS         = 8
-PREPROCESS_VERSION = "v2_korpat_rebuilt"
+PREPROCESS_VERSION = "v1_desc_full_minus_background_centering_dynamic_weight"
+
+# ── DB 호환 토크나이저 스위치 ──────────────────────────────────────
+# "korpat" : npz_rebuild.py로 재생성한 DB (korpat_tokenizer.Tokenizer 사용,
+#            모델 폴더 = MODEL_PATH / HF_MODEL_DIR)
+# "auto"   : JOLJAK_EXPR1.ipynb 원본 노트북이 만든 DB
+#            (HuggingFace AutoTokenizer/AutoModel, clean_query 전처리 사용,
+#            모델 폴더 = HF_MODEL_DIR_AUTO)
+#
+# 쿼리 시점 임베딩과 DB 벡터는 반드시 같은 토크나이저로 만들어져야 코사인
+# 유사도가 의미를 가진다. 노트북 DB를 그대로 쓰려면 이 값을 "auto"로 바꾸고,
+# 아래 PREPROCESS_VERSION도 노트북 값
+# ("v1_desc_full_minus_background_centering_dynamic_weight")으로,
+# NPZ_PATH도 노트북이 만든 NPZ 폴더로 맞춰야 한다.
+TOKENIZER_BACKEND = "auto"
 
 PDF_IMAGE_MIN_WIDTH  = 100
 PDF_IMAGE_MIN_HEIGHT = 100
@@ -58,16 +81,9 @@ PDF_MAX_IMAGES       = 5
 NUM_AGENT_RUNS       = 5      # Phase 2 독립 생성 횟수
 CLUSTER_SIM_THRESHOLD = 0.55   # 같은 의미 클러스터로 묶는 코사인 유사도 임계값
 
-DOMAIN_BASELINES = {
-    "Ai":            {"intra_mean": 0.1746, "inter_mean": -0.0339,
-                      "p25": 0.0697, "p75": 0.2809, "p90": 0.3662},
-    "BigData":       {"intra_mean": 0.2293, "inter_mean": -0.0326,
-                      "p25": 0.1228, "p75": 0.3336, "p90": 0.4207},
-    "InfoComm":      {"intra_mean": 0.0765, "inter_mean": -0.0372,
-                      "p25": -0.0991, "p75": 0.2063, "p90": 0.3781},
-    "Semiconductor": {"intra_mean": 0.4408, "inter_mean": -0.1676,
-                      "p25": 0.2974, "p75": 0.5649, "p90": 0.7355},
-}
+# DOMAIN_BASELINES는 이 파일 아래쪽, load_npz_pack() 정의 직후에서
+# NPZ meta로부터 동적으로 로드한다 (하드코딩된 스냅샷이 npz_rebuild.py
+# 재실행 후 실제 데이터와 어긋나는 문제를 막기 위함). 그 지점을 참고할 것.
 
 CLAIMS_STOPWORDS_CONSERVATIVE = [
     "상기", "포함하는", "포함하고", "구비하는", "구비하고",
@@ -371,6 +387,55 @@ def load_npz_pack(path: Path) -> dict:
         }
 
 
+# 마지막으로 알려진 스냅샷 — NPZ meta에 domain_baselines가 없을 때만 쓰는 폴백.
+# (npz_rebuild.py --rebuild를 한 번이라도 돌리면 그 이후로는 항상 NPZ에서
+#  읽은 값이 우선 적용되므로, 이 값은 실제 서비스 채점 기준으로 쓰이지 않는 게 정상이다.)
+_DOMAIN_BASELINES_FALLBACK = {
+    "Ai":            {"intra_mean": 0.1746, "inter_mean": -0.0339,
+                      "p25": 0.0697, "p75": 0.2809, "p90": 0.3662},
+    "BigData":       {"intra_mean": 0.2293, "inter_mean": -0.0326,
+                      "p25": 0.1228, "p75": 0.3336, "p90": 0.4207},
+    "InfoComm":      {"intra_mean": 0.0765, "inter_mean": -0.0372,
+                      "p25": -0.0991, "p75": 0.2063, "p90": 0.3781},
+    "Semiconductor": {"intra_mean": 0.4408, "inter_mean": -0.1676,
+                      "p25": 0.2974, "p75": 0.5649, "p90": 0.7355},
+}
+
+
+def _load_domain_baselines() -> dict:
+    """
+    final_dynamic_by_domain NPZ의 meta에 저장된 domain_baselines를 읽어온다.
+    이 값은 ClaimsOnlySearcher가 실제로 채점에 쓰는 claims-only centered
+    벡터(selected_centered_sections/claims)를 기준으로 npz_rebuild.py가
+    계산해 저장한 것이므로, _score_label()이 참조하는 기준선과 실제 검색
+    벡터 공간이 항상 같은 npz_rebuild.py 실행 결과에서 나오도록 보장된다.
+
+    NPZ가 아직 없거나(최초 셋업 전) meta에 domain_baselines가 없는
+    구버전 NPZ라면, 마지막으로 알려진 스냅샷으로 폴백한다.
+    """
+    final_path = (
+        NPZ_PATH / "final_vectors" /
+        f"final_dynamic_by_domain__center-section__source-x__{PREPROCESS_VERSION}.npz"
+    )
+    try:
+        meta = load_npz_pack(final_path)["meta"]
+        baselines = meta.get("domain_baselines")
+        if baselines:
+            print(f"[Baseline] NPZ meta에서 도메인 baseline 로드 완료: {final_path.name}")
+            return baselines
+        print(f"[Baseline] ⚠️ {final_path.name}에 domain_baselines 없음 "
+              f"(구버전 NPZ) → 폴백 스냅샷 사용. npz_rebuild.py --rebuild 재실행 권장.")
+    except FileNotFoundError:
+        print(f"[Baseline] ⚠️ NPZ 없음({final_path}) → 폴백 스냅샷 사용. "
+              f"npz_rebuild.py를 먼저 실행하세요.")
+    except Exception as e:
+        print(f"[Baseline] ⚠️ NPZ meta 로드 실패({e}) → 폴백 스냅샷 사용")
+    return _DOMAIN_BASELINES_FALLBACK
+
+
+DOMAIN_BASELINES = _load_domain_baselines()
+
+
 def _score_label(sc: float, domain: str) -> str:
     b = DOMAIN_BASELINES.get(domain, {})
     if   sc >= b.get("p90", 1):         return "★★ 매우 유사 (상위10%)"
@@ -453,20 +518,125 @@ class KorPatBERTEmbedder:
     임베딩 공간(768차원, DB와 동일 좌표계)으로 투영하는 역할을 한다.
     Phase 1의 "재구조화"와 Phase 2의 "클러스터링"이 모두 이 투영 결과 위에서
     수행되므로, 이 단계의 정확성이 이후 모든 phase의 신뢰도를 결정한다.
+
+    TOKENIZER_BACKEND 상수로 DB와 반드시 같은 토크나이저를 쓰도록 맞춘다
+    (korpat_tokenizer.Tokenizer 기반 DB vs 노트북의 AutoTokenizer 기반 DB).
     """
     def __init__(self):
         self.device      = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.max_seq_len = CHUNK_SIZE
-        if not VOCAB_PATH.exists():
-            raise FileNotFoundError(f"Vocab not found: {VOCAB_PATH}")
-        self.tokenizer   = Tokenizer(vocab_path=str(VOCAB_PATH), cased=True)
+        self.backend     = TOKENIZER_BACKEND
+
+        if self.backend == "korpat":
+            if not VOCAB_PATH.exists():
+                raise FileNotFoundError(f"Vocab not found: {VOCAB_PATH}")
+            self.tokenizer = Tokenizer(vocab_path=str(VOCAB_PATH), cased=True)
+            self.model_dir = HF_MODEL_DIR
+        elif self.backend == "auto":
+            from transformers import AutoTokenizer
+            self.model_dir = HF_MODEL_DIR_AUTO
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                self.model_dir, local_files_only=True)
+        else:
+            raise ValueError(f"Unknown TOKENIZER_BACKEND: {self.backend}")
+
+        # auto 백엔드는 반드시 같은 폴더에서 온 tokenizer/model 쌍이어야 한다.
+        # (HF_MODEL_DIR — korpat_tokenizer용 폴더 — 를 재사용하면 tokenizer의
+        #  vocab 인덱스와 model의 임베딩 테이블이 서로 안 맞아 의미 없는
+        #  임베딩이 나온다.)
         self.model       = AutoModel.from_pretrained(
-            HF_MODEL_DIR, local_files_only=True).to(self.device)
+            self.model_dir, local_files_only=True).to(self.device)
         self.model.eval()
         self.hidden_size = self.model.config.hidden_size
-        print(f"[Embedder] device={self.device}  hidden={self.hidden_size}")
+        print(f"[Embedder] device={self.device}  hidden={self.hidden_size}  "
+              f"backend={self.backend}  model_dir={self.model_dir}")
+
+        self._sanity_check_tokenizer()
+        self._sanity_check_model()
+
+    def _sanity_check_tokenizer(self):
+        """
+        토크나이저가 한국어를 실제로 읽을 수 있는지 기동 시점에 바로 확인한다.
+        (auto 백엔드에서 HF_MODEL_DIR_AUTO가 잘못된 폴더를 가리키면, 에러 없이
+         한국어 vocab이 없는 토크나이저로 조용히 폴백해 모든 한국어 텍스트가
+         [UNK]로 뭉개지는 문제가 있었다 — 이 문제를 GPT 토큰을 쓰기 전에
+         즉시 잡아낸다.)
+        """
+        probe = "특허 청구항 발명"  # 흔한 한자어 — 정상 vocab이면 UNK가 나올 수 없음
+        if self.backend == "auto":
+            vocab_size = getattr(self.tokenizer, "vocab_size", None)
+            print(f"[Embedder] 토크나이저 정보: class={type(self.tokenizer).__name__}  "
+                  f"vocab_size={vocab_size}")
+
+            ids    = self.tokenizer.encode(probe, add_special_tokens=False)
+            unk_id = getattr(self.tokenizer, "unk_token_id", None)
+            n_unk  = sum(1 for i in ids if i == unk_id) if unk_id is not None else 0
+            if not ids or (unk_id is not None and n_unk == len(ids)):
+                raise RuntimeError(
+                    f"[Embedder] ⚠️⚠️⚠️ 토크나이저 점검 실패: '{probe}' 전체가 "
+                    f"[UNK]로 토큰화됩니다 (model_dir='{self.model_dir}', "
+                    f"tokenizer class={type(self.tokenizer).__name__}, "
+                    f"vocab_size={vocab_size}). tokenizer.json이 한국어 vocab이 "
+                    f"아닌 다른(placeholder/영문) 토크나이저로 변환됐을 가능성이 "
+                    f"높습니다 — model.safetensors를 pytorch로 변환할 때 tokenizer도 "
+                    f"korpat_vocab.txt 기준으로 함께 변환됐는지 확인하세요."
+                )
+            print(f"[Embedder] ✓ 토크나이저 점검 통과: '{probe}' → {len(ids)}토큰, UNK 0개")
+        else:
+            ids = self.tokenizer.encode(probe, max_len=None)[0]
+            if len(ids) <= 2:  # [CLS][SEP]만 있으면 실질 토큰이 없다는 뜻
+                raise RuntimeError(
+                    f"[Embedder] ⚠️⚠️⚠️ 토크나이저 점검 실패: '{probe}'가 "
+                    f"토큰화되지 않습니다 (VOCAB_PATH='{VOCAB_PATH}')."
+                )
+            print(f"[Embedder] ✓ 토크나이저 점검 통과: '{probe}' → {len(ids)}토큰")
+
+    def _sanity_check_model(self):
+        """
+        model.safetensors가 실제로 학습된 KorPatBERT 가중치인지 확인한다.
+        토크나이저가 정상이어도(UNK 없음) model.safetensors 변환이 누락돼
+        사실상 미완성/랜덤 초기화 상태라면, 완전히 무관한 두 문장도 거의
+        같은 벡터로 나온다 — pytorch/ 폴더의 tokenizer.json이 5토큰짜리
+        빈 껍데기였던 전례가 있어서, model.safetensors도 의심할 이유가 있다.
+        """
+        s1 = "특허 출원인은 발명의 명칭을 기재하여야 한다"
+        s2 = "오늘 점심으로 김치찌개와 계란말이를 맛있게 먹었다"
+        v1 = self.embed_text(s1)
+        v2 = self.embed_text(s2)
+        n1, n2 = float(np.linalg.norm(v1)), float(np.linalg.norm(v2))
+
+        if n1 < 1e-6 or n2 < 1e-6:
+            raise RuntimeError(
+                f"[Embedder] ⚠️⚠️⚠️ 모델 점검 실패: 임베딩이 0벡터입니다 "
+                f"(model_dir='{self.model_dir}'). 모델 forward 자체가 깨져있을 "
+                f"가능성이 있습니다."
+            )
+
+        sim = float(np.dot(v1, v2) / (n1 * n2))
+        print(f"[Embedder] 모델 점검: 완전히 무관한 두 문장 "
+              f"(특허 출원 vs 점심 메뉴) 유사도={sim:.4f}")
+
+        if sim > 0.97:
+            raise RuntimeError(
+                f"[Embedder] ⚠️⚠️⚠️ 모델 점검 실패: 완전히 무관한 두 문장인데도 "
+                f"유사도가 {sim:.4f}로 비정상적으로 높습니다 "
+                f"(model_dir='{self.model_dir}'). tokenizer.json이 5토큰짜리 "
+                f"빈 껍데기였던 것처럼, model.safetensors도 model.ckpt-381250에서 "
+                f"제대로 변환되지 않아 사실상 미완성/기본 초기화 상태일 가능성이 "
+                f"높습니다. config.json의 hidden_size/num_hidden_layers/"
+                f"num_attention_heads가 pretrained/korpat_bert_config.json과 "
+                f"일치하는지, model.safetensors가 실제로 model.ckpt-381250의 "
+                f"가중치를 담고 있는지(파일 크기가 몇 KB 수준이면 확실히 "
+                f"비어있는 것) 확인하세요."
+            )
+        print(f"[Embedder] ✓ 모델 점검 통과")
 
     def embed_text(self, text: str) -> np.ndarray:
+        if self.backend == "auto":
+            return self._embed_text_auto(text)
+        return self._embed_text_korpat(text)
+
+    def _embed_text_korpat(self, text: str) -> np.ndarray:
         if not text or not text.strip():
             return np.zeros(self.hidden_size, dtype=np.float32)
         try:
@@ -504,10 +674,72 @@ class KorPatBERTEmbedder:
         v = np.mean(np.stack(embedded), axis=0)
         return (v / (np.linalg.norm(v) + 1e-8)).astype(np.float32)
 
+    # ── JOLJAK_EXPR1.ipynb의 KorPatBERTEmbedder와 완전히 동일 ──────────
+    def _clean_query_auto(self, text: str) -> str:
+        if not text:
+            return ""
+        t = unicodedata.normalize("NFKC", text).lower()
+        t = re.sub(r"[^0-9a-z가-힣\s\-\_/;]", " ", t)
+        t = re.sub(r"\s+", " ", t).strip()
+        return t
+
+    def _embed_text_auto(self, text: str) -> np.ndarray:
+        text = self._clean_query_auto(text)
+        if not text:
+            return np.zeros(self.hidden_size, dtype=np.float32)
+
+        tokens = self.tokenizer.encode(text, add_special_tokens=False)
+        if not tokens:
+            return np.zeros(self.hidden_size, dtype=np.float32)
+
+        max_chunk_len = self.max_seq_len - 2
+        chunks = [tokens[i:i + max_chunk_len]
+                  for i in range(0, len(tokens), STRIDE)][:MAX_CHUNKS]
+
+        embedded = []
+        with torch.no_grad():
+            for chunk in chunks:
+                ids  = [self.tokenizer.cls_token_id] + chunk + [self.tokenizer.sep_token_id]
+                mask = [1] * len(ids)
+                pad  = self.max_seq_len - len(ids)
+                if pad > 0:
+                    ids  += [self.tokenizer.pad_token_id] * pad
+                    mask += [0] * pad
+                out = self.model(
+                    input_ids      = torch.tensor([ids]).to(self.device),
+                    attention_mask = torch.tensor([mask]).to(self.device),
+                ).last_hidden_state[0].detach().cpu().numpy()
+                m = np.array(mask, dtype=np.float32)[:, None]
+                embedded.append((out * m).sum(0) / np.clip(m.sum(), 1, None))
+
+        if not embedded:
+            return np.zeros(self.hidden_size, dtype=np.float32)
+        v = np.mean(np.stack(embedded), axis=0)
+        return (v / (np.linalg.norm(v) + 1e-8)).astype(np.float32)
+
+
 
 # ════════════════════════════════════════════════════════════════
 # ClaimsOnlySearcher (claims 섹션 단독 검색 + 항별 검색)
 # ════════════════════════════════════════════════════════════════
+def _get_doc_section(doc: dict, key: str) -> str:
+    """
+    doc JSON에서 섹션 텍스트를 읽는다. 두 스키마를 모두 지원한다:
+      - 평면 스키마: {"abstract": ..., "claims": ..., "description": ...}
+        (npz_rebuild.py / 현재 data/reprocessed가 쓰는 방식)
+      - 중첩 스키마: {"clean_text": {...}, "raw_text": {...}}
+        (JOLJAK_EXPR1.ipynb 원본 노트북이 쓰던 방식)
+    노트북이 만든 DB를 그대로 쓸 때, metadata JSON이 아직 중첩 스키마라도
+    검색 결과 표시(제목/요약/청구항 미리보기)가 비어버리지 않도록 한다.
+    """
+    val = doc.get(key)
+    if val:
+        return val
+    clean = doc.get("clean_text") or {}
+    raw   = doc.get("raw_text") or {}
+    return clean.get(key, "") or raw.get(key, "") or ""
+
+
 class ClaimsOnlySearcher:
     def __init__(self, embedder: KorPatBERTEmbedder,
                  npz_root=NPZ_PATH, metadata_root=JSON_PATH):
@@ -515,6 +747,49 @@ class ClaimsOnlySearcher:
         self.npz_root      = Path(npz_root)
         self.metadata_root = Path(metadata_root)
         self._cache        = {}
+        self._global_claims_center = None   # 도메인 전체 합산 center (lazy, 1회만 계산)
+
+    def _compute_global_claims_center(self) -> np.ndarray:
+        """
+        npz_rebuild.py가 실제로 DB를 만들 때 쓰는 center와 반드시 같은 값이어야
+        한다. npz_rebuild.py의 build_all_banks() 주석: "raw_results는 전체
+        도메인 합산" — 즉 section(=claims) 레벨 center는 Ai+BigData+InfoComm+
+        Semiconductor 전체를 합쳐 하나의 x-mode raw 벡터 평균으로 계산된다.
+
+        이전 버전은 도메인별로 그 도메인의 bank 파일 하나만 평균내서 center로
+        썼는데, 이는 DB 구축 시 쓴 전역(global) center와 다른 값이다.
+        그러면 쿼리 시점에 apply_centering()이 실제 DB 좌표계와 어긋난
+        center를 빼게 되어, 검색/유사도 비교가 미묘하게(때로는 크게) 부정확해진다.
+        """
+        if self._global_claims_center is not None:
+            return self._global_claims_center
+
+        all_vecs = []
+        for domain in DOMAIN_KEYWORDS.keys():
+            bank_path = (
+                self.npz_root / "domain_section_mode_banks" /
+                f"{domain}__claims__x__desc-full_minus_background__"
+                f"tok{CHUNK_SIZE}-{STRIDE}-{MAX_CHUNKS}__{PREPROCESS_VERSION}.npz"
+            )
+            if bank_path.exists():
+                bank_data = load_npz_pack(bank_path)
+                all_vecs.append(bank_data["vectors"])
+            else:
+                print(f"  [ClaimsSearcher] ⚠️  bank 없음: {bank_path.name} "
+                      f"(전역 center 계산에서 이 도메인 제외)")
+
+        if not all_vecs:
+            print("  [ClaimsSearcher] ⚠️  claims bank를 하나도 못 찾음 → "
+                  "전역 center 계산 불가, 도메인별 근사로 폴백")
+            return None
+
+        combined = np.concatenate(all_vecs, axis=0)
+        self._global_claims_center = np.mean(
+            combined, axis=0, keepdims=True
+        ).astype(np.float32)
+        print(f"  [ClaimsSearcher] 전역 claims center 계산 완료 "
+              f"(도메인 {len(all_vecs)}개, 총 {len(combined):,}개 문서)")
+        return self._global_claims_center
 
     def _load_domain(self, domain: str):
         if domain in self._cache:
@@ -535,20 +810,23 @@ class ClaimsOnlySearcher:
             raise FileNotFoundError(f"claims NPZ 없음: {sec_path}")
         sec_data = load_npz_pack(sec_path)
 
-        bank_path = (
-            self.npz_root / "domain_section_mode_banks" /
-            f"{domain}__claims__x__"
-            f"desc-full_minus_background__"
-            f"tok{CHUNK_SIZE}-{STRIDE}-{MAX_CHUNKS}__{PREPROCESS_VERSION}.npz"
-        )
-        if bank_path.exists():
-            bank_data = load_npz_pack(bank_path)
-            center = np.mean(bank_data["vectors"], axis=0,
-                             keepdims=True).astype(np.float32)
-        else:
-            center = np.mean(sec_data["vectors"], axis=0,
-                             keepdims=True).astype(np.float32)
-            print(f"  [ClaimsSearcher] bank 없음 → centroid 근사")
+        center = self._compute_global_claims_center()
+        if center is None:
+            # 폴백: 이 도메인만으로 근사 (예전 동작, 부정확할 수 있음)
+            bank_path = (
+                self.npz_root / "domain_section_mode_banks" /
+                f"{domain}__claims__x__"
+                f"desc-full_minus_background__"
+                f"tok{CHUNK_SIZE}-{STRIDE}-{MAX_CHUNKS}__{PREPROCESS_VERSION}.npz"
+            )
+            if bank_path.exists():
+                bank_data = load_npz_pack(bank_path)
+                center = np.mean(bank_data["vectors"], axis=0,
+                                 keepdims=True).astype(np.float32)
+            else:
+                center = np.mean(sec_data["vectors"], axis=0,
+                                 keepdims=True).astype(np.float32)
+                print(f"  [ClaimsSearcher] bank 없음 → centroid 근사")
 
         self._cache[domain] = {
             "vectors":  sec_data["vectors"].astype(np.float32),
@@ -630,7 +908,7 @@ class ClaimsOnlySearcher:
         results = []
         for r in top_results:
             doc = self._load_doc(r["doc_id"], domain)
-            claims_full = str(doc.get("claims", ""))
+            claims_full = str(_get_doc_section(doc, "claims"))
 
             # ── claims_structured 우선 사용 ──────────────────────────
             claims_structured = doc.get("claims_structured")
@@ -643,11 +921,11 @@ class ClaimsOnlySearcher:
             results.append({
                 **r,
                 "title":            str(doc.get("title", ""))[:80],
-                "abstract":         str(doc.get("abstract", ""))[:400],
+                "abstract":         str(_get_doc_section(doc, "abstract"))[:400],
                 "independent_claim": split_items[0]["text"] if split_items else "",
                 "claims_full":      claims_full,
                 "claim_items":      split_items,
-                "description":      str(doc.get("description", ""))[:600],
+                "description":      str(_get_doc_section(doc, "description"))[:600],
                 "text":             doc,
             })
         return results
@@ -741,11 +1019,17 @@ class IntermediateDocumentRestructurer:
 
         pairs.sort(key=lambda p: p["score"], reverse=True)
 
-        high_score_pairs = [p for p in pairs if p["score"] >= 0.45]
+        # 허브성 텍스트(도메인 일반적 표현) 감지 기준도 도메인 baseline 상대적으로.
+        # 고정 0.45는 도메인마다 "평범한 유사도" 스케일이 달라서(Semiconductor는
+        # 높고 InfoComm은 낮음) 일부 도메인에선 거의 항상 걸리고 일부에선 거의
+        # 안 걸리는 문제가 있었다.
+        hub_threshold = DOMAIN_BASELINES.get(domain, {}).get("p90", 0.45)
+        high_score_pairs = [p for p in pairs if p["score"] >= hub_threshold]
         if len(high_score_pairs) >= 3:
             flagged_claim = high_score_pairs[0]["user_claim_no"]
             print(f"  [경고] doc={doc.get('doc_id','?')}: 사용자 청구항{flagged_claim}이 "
-                  f"{len(high_score_pairs)}개 문서 청구항과 0.45 이상으로 매칭됨. "
+                  f"{len(high_score_pairs)}개 문서 청구항과 {hub_threshold:.4f}"
+                  f"('{domain}' 상위 10% 기준) 이상으로 매칭됨. "
                   f"해당 청구항이 도메인 일반적 표현(허브성 텍스트)일 가능성을 점검하십시오.")
 
         max_pairs = len(user_claim_items) * len(doc_claim_items)
@@ -1241,12 +1525,35 @@ class AreaChairSynthesizer:
     유사도 지형이 청구 가능한 상한을 calibration하는 역할을 한다.
     """
 
-    SIMILARITY_INTERPRETATION = """유사도 해석 기준은 다음과 같습니다.
+    def _build_similarity_interpretation(self, domain: str) -> str:
+        """
+        고정된 절대값(예: '0.40 이상') 대신, 이 도메인의 실제 baseline
+        분포(DOMAIN_BASELINES의 p25/intra_mean/p90)를 기준으로 상대적인
+        위험 구간을 계산한다.
 
-* 유사도 0.40 이상: 선행 청구항과 의미적으로 강하게 겹칠 수 있는 위험 구간
-* 유사도 0.35 ~ 0.40: 독립항 작성 시 차별화 구성요소가 반드시 필요한 구간
-* 유사도 0.30 ~ 0.35: 구성요소 수준의 차별화 검토가 필요한 구간
-* 유사도 0.30 미만: 상대적으로 독립항 청구 가능성이 높은 구간
+        도메인마다 '평범한 유사도'의 스케일 자체가 다르다 (예: Semiconductor
+        는 같은 도메인 문서끼리도 평균 유사도가 높고, InfoComm은 낮음).
+        고정 절대값을 쓰면 도메인에 따라 기준이 너무 느슨하거나 너무
+        빡빡해지므로, 항상 해당 도메인 자체의 분포에서 상대적으로
+        얼마나 높은/낮은 유사도인지로 판단해야 한다. 임베딩 모델이
+        바뀌어도(=DOMAIN_BASELINES가 재계산되면) 이 기준은 자동으로
+        같이 갱신된다.
+        """
+        b = DOMAIN_BASELINES.get(domain, {})
+        p25    = b.get("p25", 0.0)
+        mean_  = b.get("intra_mean", 0.0)
+        p75    = b.get("p75", mean_)
+        p90    = b.get("p90", mean_)
+
+        return f"""유사도 해석 기준은 다음과 같습니다. (아래 수치는 '{domain}' 도메인
+같은 도메인 문서끼리의 실제 유사도 분포를 기준으로 계산된 상대적 기준입니다 —
+도메인마다 평범한 유사도의 스케일 자체가 다르므로, 절대적인 숫자가 아니라
+이 도메인 안에서의 상대적 위치로 해석해야 합니다.)
+
+* 유사도 {p90:.4f}(상위 10%) 이상: 선행 청구항과 의미적으로 강하게 겹칠 수 있는 위험 구간
+* 유사도 {mean_:.4f}(평균) ~ {p90:.4f}(상위 10%): 독립항 작성 시 차별화 구성요소가 반드시 필요한 구간
+* 유사도 {p25:.4f}(하위 25%) ~ {mean_:.4f}(평균): 구성요소 수준의 차별화 검토가 필요한 구간
+* 유사도 {p25:.4f}(하위 25%) 미만: 상대적으로 독립항 청구 가능성이 높은 구간
 
 단, 위 기준은 절대적인 법적 판단이 아니라 KorPatBERT 기반 의미 유사도 검증을 위한 참고 기준입니다."""
 
@@ -1279,7 +1586,8 @@ class AreaChairSynthesizer:
         return "\n".join(lines)
 
     def build_prompt(self, user_input: str, intermediate_summary: str,
-                     agent_answer_text: str, similarity_landscape: str) -> tuple:
+                     agent_answer_text: str, similarity_landscape: str,
+                     domain: str) -> tuple:
         system = "당신은 특허 청구항 최종 합성자 역할을 수행합니다."
         prompt = f"""아래의 사용자 원본 아이디어, 중간 구조화 문서 요약, 5개의 독립 생성 결과,
 KorPatBERT 유사도 정보를 종합하여 최종 특허 청구항을 작성하십시오.
@@ -1296,7 +1604,7 @@ KorPatBERT 유사도 정보를 종합하여 최종 특허 청구항을 작성하
 [KorPatBERT 유사도 정보 - 선행기술 지형]
 {similarity_landscape}
 
-{self.SIMILARITY_INTERPRETATION}
+{self._build_similarity_interpretation(domain)}
 
 합성 규칙은 다음과 같습니다.
 
@@ -1339,9 +1647,11 @@ KorPatBERT 유사도 정보를 종합하여 최종 특허 청구항을 작성하
         return system, prompt
 
     def synthesize(self, user_input: str, intermediate_summary: str,
-                  agent_answer_text: str, similarity_landscape: str) -> str:
+                  agent_answer_text: str, similarity_landscape: str,
+                  domain: str) -> str:
         system, prompt = self.build_prompt(
-            user_input, intermediate_summary, agent_answer_text, similarity_landscape
+            user_input, intermediate_summary, agent_answer_text,
+            similarity_landscape, domain
         )
         return self.llm.call(system, prompt)
 
@@ -1375,9 +1685,6 @@ class ThreePhaseClaimPipeline:
     # ── Phase 0 ──────────────────────────────────────────────
     def phase0_normalize_input(self, raw_input: str, few_shots: list) -> dict:
         """
-
-domain = verify_domain(raw_input, domain)  # ← 추가: 교차 검증
-print(f"[Phase0] 최종 도메인: {domain}")
         사용자 자유 형식 입력을 KorPatBERT 형식(섹션화 JSON)으로 정규화.
         이 단계는 단순 전처리가 아니라, 사용자 입력을 KorPatBERT가 학습한
         임베딩 공간의 좌표계로 투영하기 위한 표현 변환이다.
@@ -1523,12 +1830,8 @@ description clean: 본 발명은, 일 실시예에 따르면, 예를 들어, 예
             
             
             domain = verify_domain(raw_input, domain)
-            
-            print(f"[Phase0] 도메인: {domain}  이유: {sectioned.get('type_reason','')}")
 
-
-            domain = verify_domain(raw_input, domain)  # ← 추가: 교차 검증
-            print(f"[Phase0] 최종 도메인: {domain}")
+            print(f"[Phase0] 최종 도메인: {domain}  이유: {sectioned.get('type_reason','')}")
             user_claim_items = split_claims_into_items(sectioned["claims"]["raw"])
             print(f"[Phase0] 사용자 청구항 {len(user_claim_items)}개 항으로 분리됨")
             print(f"\n[진단] Phase 0 claims.raw 원문 (앞 800자):")
@@ -1618,6 +1921,7 @@ description clean: 본 발명은, 일 실시예에 따르면, 예를 들어, 예
                 intermediate_summary=intermediate_summary,
                 agent_answer_text=agent_answer_combined,
                 similarity_landscape=similarity_landscape,
+                domain=domain,
             )
             timer.mark("  - Area Chair LLM 호출",
                       _time.perf_counter() - t0,
