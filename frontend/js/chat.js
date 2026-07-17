@@ -20,6 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
     signalBadge: $("signalBadge"),
     signalCurrent: $("signalCurrent"),
     signalSteps: $("signalSteps"),
+    phase1Analysis: $("phase1Analysis"),
   };
 
   const params = new URLSearchParams(window.location.search);
@@ -34,6 +35,10 @@ document.addEventListener("DOMContentLoaded", () => {
     statusTimer: null,
     isSending: false,
     signalPanelActive: false,
+    phase1ImageUrl: null,
+    phase1ImageLoading: false,
+    phase1ImageAvailable: false,
+    phase1LastAttemptAt: 0,
   };
 
   const auth = {
@@ -102,6 +107,16 @@ document.addEventListener("DOMContentLoaded", () => {
       return this.request(`/api/signal/status?chatId=${encodeURIComponent(chatId)}`, {
         method: "GET",
       });
+    },
+    async phase1Image() {
+      const res = await fetch(
+        `${API_BASE}/api/signal/phase1-image?chatId=${encodeURIComponent(chatId)}&_=${Date.now()}`,
+        { cache: "no-store" }
+      );
+
+      if (res.status === 404) return null;
+      if (!res.ok) throw new Error("중간 분석 이미지를 불러오지 못했습니다.");
+      return res.blob();
     },
     sendMessage(message, file) {
       const url = `/api/chats/${encodeURIComponent(chatId)}/messages`;
@@ -623,6 +638,83 @@ document.addEventListener("DOMContentLoaded", () => {
     el.aiStatus.remove();
   }
 
+  function hasReachedPhase1Image(status) {
+    const code = String(status?.code || "IDLE");
+    const history = Array.isArray(status?.history) ? status.history : [];
+    const historyCodes = history.map((item) => String(item?.code || item?.id || ""));
+    return code === "DONE" || code === "ERROR" || Number(code) >= 40000 || historyCodes.includes("40000");
+  }
+
+  function revokePhase1ImageUrl() {
+    if (!state.phase1ImageUrl) return;
+    URL.revokeObjectURL(state.phase1ImageUrl);
+    state.phase1ImageUrl = null;
+  }
+
+  function renderPhase1Analysis(collapsed = false) {
+    if (!el.phase1Analysis || !state.phase1ImageAvailable || !state.phase1ImageUrl) return;
+
+    el.phase1Analysis.hidden = false;
+    el.phase1Analysis.classList.toggle("is-collapsed", collapsed);
+    el.phase1Analysis.innerHTML = `
+      <button type="button" class="phase1-analysis__toggle" aria-expanded="${collapsed ? "false" : "true"}">
+        <span>청구항 검색 유사도 분석</span>
+        <span class="phase1-analysis__chevron" aria-hidden="true">⌄</span>
+      </button>
+      <div class="phase1-analysis__body" ${collapsed ? "hidden" : ""}>
+        <p>유사 특허 검색 결과를 시각화한 중간 분석 이미지입니다.</p>
+        <img src="${state.phase1ImageUrl}" alt="청구항 검색 유사도 분석 결과" />
+      </div>
+    `;
+
+    const button = el.phase1Analysis.querySelector(".phase1-analysis__toggle");
+    const body = el.phase1Analysis.querySelector(".phase1-analysis__body");
+    button?.addEventListener("click", () => {
+      const willOpen = body?.hidden;
+      if (body) body.hidden = !willOpen;
+      button.setAttribute("aria-expanded", willOpen ? "true" : "false");
+      el.phase1Analysis.classList.toggle("is-collapsed", !willOpen);
+    });
+  }
+
+  async function ensurePhase1Analysis(collapsed = false, force = false) {
+    if (!el.phase1Analysis || !chatId) return false;
+
+    if (state.phase1ImageAvailable && state.phase1ImageUrl) {
+      renderPhase1Analysis(collapsed);
+      return true;
+    }
+
+    const now = Date.now();
+    if (state.phase1ImageLoading) return false;
+    if (!force && now - state.phase1LastAttemptAt < 2500) return false;
+
+    state.phase1ImageLoading = true;
+    state.phase1LastAttemptAt = now;
+
+    try {
+      const blob = await api.phase1Image();
+      if (!blob) return false;
+
+      revokePhase1ImageUrl();
+      state.phase1ImageUrl = URL.createObjectURL(blob);
+      state.phase1ImageAvailable = true;
+      renderPhase1Analysis(collapsed);
+      return true;
+    } catch (error) {
+      console.warn(error.message || error);
+      return false;
+    } finally {
+      state.phase1ImageLoading = false;
+    }
+  }
+
+  function hidePhase1Analysis() {
+    if (!el.phase1Analysis) return;
+    el.phase1Analysis.hidden = true;
+    el.phase1Analysis.innerHTML = "";
+  }
+
   function stopStatusPolling() {
     if (!state.statusTimer) return;
     clearInterval(state.statusTimer);
@@ -639,6 +731,10 @@ document.addEventListener("DOMContentLoaded", () => {
         renderSignalPanel(status);
       }
 
+      if (hasReachedPhase1Image(status)) {
+        await ensurePhase1Analysis(status.code === "DONE");
+      }
+
       if (status.running) {
         showAiStatus(displayProgressMessage(status));
         return true;
@@ -649,6 +745,7 @@ document.addEventListener("DOMContentLoaded", () => {
         stopStatusPolling();
         await loadMessages();
         await loadRecentChats();
+        await ensurePhase1Analysis(true, true);
         hideSignalPanel();
         return false;
       }
@@ -778,6 +875,11 @@ document.addEventListener("DOMContentLoaded", () => {
     state.isSending = true;
     updateSendState();
 
+    hidePhase1Analysis();
+    revokePhase1ImageUrl();
+    state.phase1ImageAvailable = false;
+    state.phase1LastAttemptAt = 0;
+
     showAiStatus("AI 답변 생성을 준비 중입니다.", true);
     resetSignalPanel();
     showSignalPanel();
@@ -797,6 +899,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       await loadMessages();
       await loadRecentChats();
+      await ensurePhase1Analysis(true, true);
 
       hideSignalPanel();
     } catch (err) {

@@ -1,0 +1,542 @@
+diff --git a/.gitignore b/.gitignore
+index cacba44..5aa6a7d 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -20,3 +20,7 @@ frontend.zip
+ backend.zip
+ frontend.zip
+ backend/uploads/
++ai/models.zip
++ai/*.zip
++ai/models.zip
++ai/*.zip
+diff --git a/backend/src/main/java/com/joljak/backend/service/SignalService.java b/backend/src/main/java/com/joljak/backend/service/SignalService.java
+index cf09a8a..2681b72 100644
+--- a/backend/src/main/java/com/joljak/backend/service/SignalService.java
++++ b/backend/src/main/java/com/joljak/backend/service/SignalService.java
+@@ -3,6 +3,9 @@ package com.joljak.backend.service;
+ import org.springframework.stereotype.Service;
+ 
+ import java.time.LocalDateTime;
++import java.util.ArrayList;
++import java.util.LinkedHashMap;
++import java.util.List;
+ import java.util.Map;
+ import java.util.concurrent.ConcurrentHashMap;
+ 
+@@ -12,93 +15,149 @@ public class SignalService {
+     private final Map<Long, AiStatus> statusByRoom = new ConcurrentHashMap<>();
+     private AiStatus globalStatus = AiStatus.idle();
+ 
+-    public void start(Long chatId) {
+-        put(chatId, AiStatus.running("START", "AI 답변 생성을 시작했습니다."));
++    private static final Map<String, String> SIGNAL_MESSAGES = new LinkedHashMap<>();
++
++    static {
++        SIGNAL_MESSAGES.put("10000", "PDF 텍스트/섹션 추출 시작");
++        SIGNAL_MESSAGES.put("10001", "PDF 텍스트/섹션 추출 완료");
++        SIGNAL_MESSAGES.put("10002", "도면 캡션(LLaVA) 시작");
++        SIGNAL_MESSAGES.put("10003", "도면 캡션(LLaVA) 완료");
++
++        SIGNAL_MESSAGES.put("20000", "사용자 입력 → JSON 변환 시작");
++        SIGNAL_MESSAGES.put("20001", "사용자 입력 → JSON 변환 완료");
++
++        SIGNAL_MESSAGES.put("30000", "유사 특허 탐색 시작");
++        SIGNAL_MESSAGES.put("30001", "유사 특허 top-5 검색 완료");
++        SIGNAL_MESSAGES.put("30002", "문서별 재구조화 시작");
++        SIGNAL_MESSAGES.put("30003", "문서별 재구조화 완료");
++
++        SIGNAL_MESSAGES.put("40000", "독립 청구항 5회 생성 시작");
++        SIGNAL_MESSAGES.put("40001", "독립 청구항 생성+클러스터링 완료");
++
++        SIGNAL_MESSAGES.put("50000", "GPT 최종 답변 생성 시작");
++        SIGNAL_MESSAGES.put("50001", "GPT 최종 답변 생성 완료");
+     }
+ 
+-    public void start() {
+-        globalStatus = AiStatus.running("START", "AI 답변 생성을 시작했습니다.");
++    public synchronized void start(Long chatId) {
++        AiStatus status = AiStatus.running("START", "AI 답변 생성을 시작했습니다.");
++        status.addHistory("START", "AI 답변 생성을 시작했습니다.");
++        put(chatId, status);
+     }
+ 
+-    public void update(String id, Long chatId) {
+-        put(chatId, AiStatus.running(id, messageBySignal(id)));
+-        System.out.println("시그널 수신: " + id + " chatId=" + chatId);
++    public synchronized void start() {
++        start(null);
+     }
+ 
+-    public void update(String id) {
+-        globalStatus = AiStatus.running(id, messageBySignal(id));
+-        System.out.println("시그널 수신: " + id);
++    public synchronized void update(String id, Long chatId) {
++        AiStatus status = getAiStatus(chatId);
++        status.code = id;
++        status.message = messageBySignal(id);
++        status.running = true;
++        status.updatedAt = LocalDateTime.now();
++        status.addHistory(id, status.message);
++        put(chatId, status);
++
++        System.out.println("시그널 수신: " + id + " - " + status.message + " chatId=" + chatId);
+     }
+ 
+-    public void finish(Long chatId) {
+-        put(chatId, AiStatus.done());
++    public synchronized void update(String id) {
++        update(id, null);
+     }
+ 
+-    public void finish() {
+-        globalStatus = AiStatus.done();
++    public synchronized void finish(Long chatId) {
++        AiStatus status = getAiStatus(chatId);
++        status.code = "DONE";
++        status.message = "AI 답변 생성이 완료되었습니다.";
++        status.running = false;
++        status.updatedAt = LocalDateTime.now();
++        status.addHistory("DONE", "AI 답변 생성이 완료되었습니다.");
++        put(chatId, status);
+     }
+ 
+-    public void fail(Long chatId, String message) {
+-        put(chatId, AiStatus.error(message));
++    public synchronized void finish() {
++        finish(null);
+     }
+ 
+-    public void fail(String message) {
+-        globalStatus = AiStatus.error(message);
++    public synchronized void fail(Long chatId, String message) {
++        AiStatus status = getAiStatus(chatId);
++        status.code = "ERROR";
++        status.message = message;
++        status.running = false;
++        status.updatedAt = LocalDateTime.now();
++        status.addHistory("ERROR", message);
++        put(chatId, status);
+     }
+ 
+-    public Map<String, Object> getStatus(Long chatId) {
+-        AiStatus status = chatId == null
+-                ? globalStatus
+-                : statusByRoom.getOrDefault(chatId, AiStatus.idle());
++    public synchronized void fail(String message) {
++        fail(null, message);
++    }
+ 
+-        return status.toMap();
++    public synchronized Map<String, Object> getStatus(Long chatId) {
++        return getAiStatus(chatId).toMap();
+     }
+ 
+-    public Map<String, Object> getStatus() {
++    public synchronized Map<String, Object> getStatus() {
+         return getStatus(null);
+     }
+ 
++    private AiStatus getAiStatus(Long chatId) {
++        if (chatId == null) {
++            return globalStatus == null ? AiStatus.idle() : globalStatus;
++        }
++        return statusByRoom.getOrDefault(chatId, AiStatus.idle());
++    }
++
+     private void put(Long chatId, AiStatus status) {
+         if (chatId == null) {
+             globalStatus = status;
+-            return;
++        } else {
++            statusByRoom.put(chatId, status);
+         }
+-        statusByRoom.put(chatId, status);
+     }
+ 
+     private String messageBySignal(String id) {
+-        return switch (id) {
+-            case "10001" -> "입력 내용을 특허 문서 구조로 분석 중입니다.";
+-            case "10002" -> "유사 특허를 검색 중입니다.";
+-            case "10003" -> "최종 특허 명세서를 생성 중입니다.";
+-            default -> "AI 작업을 처리 중입니다.";
+-        };
++        return SIGNAL_MESSAGES.getOrDefault(id, "AI 작업을 처리 중입니다.");
+     }
+ 
+-    private record AiStatus(String code, String message, boolean running, LocalDateTime updatedAt) {
+-        static AiStatus idle() {
+-            return new AiStatus("IDLE", "대기 중", false, LocalDateTime.now());
++    private static class AiStatus {
++        private String code;
++        private String message;
++        private boolean running;
++        private LocalDateTime updatedAt;
++        private final List<Map<String, Object>> history = new ArrayList<>();
++
++        private AiStatus(String code, String message, boolean running, LocalDateTime updatedAt) {
++            this.code = code;
++            this.message = message;
++            this.running = running;
++            this.updatedAt = updatedAt;
+         }
+ 
+-        static AiStatus running(String code, String message) {
+-            return new AiStatus(code, message, true, LocalDateTime.now());
++        private static AiStatus idle() {
++            return new AiStatus("IDLE", "대기 중", false, LocalDateTime.now());
+         }
+ 
+-        static AiStatus done() {
+-            return new AiStatus("DONE", "AI 답변 생성이 완료되었습니다.", false, LocalDateTime.now());
++        private static AiStatus running(String code, String message) {
++            return new AiStatus(code, message, true, LocalDateTime.now());
+         }
+ 
+-        static AiStatus error(String message) {
+-            return new AiStatus("ERROR", message, false, LocalDateTime.now());
++        private void addHistory(String code, String message) {
++            Map<String, Object> item = new LinkedHashMap<>();
++            item.put("code", code);
++            item.put("message", message);
++            item.put("time", LocalDateTime.now().toString());
++            history.add(item);
+         }
+ 
+-        Map<String, Object> toMap() {
+-            return Map.of(
+-                    "code", code,
+-                    "message", message,
+-                    "running", running,
+-                    "updatedAt", updatedAt.toString()
+-            );
++        private Map<String, Object> toMap() {
++            Map<String, Object> map = new LinkedHashMap<>();
++            map.put("code", code);
++            map.put("message", message);
++            map.put("running", running);
++            map.put("updatedAt", updatedAt.toString());
++            map.put("history", new ArrayList<>(history));
++            map.put("steps", SIGNAL_MESSAGES);
++            return map;
+         }
+     }
+ }
+diff --git a/frontend/css/chat.css b/frontend/css/chat.css
+index 0c9ebb8..5b5eb2b 100644
+--- a/frontend/css/chat.css
++++ b/frontend/css/chat.css
+@@ -319,3 +319,145 @@ body {
+     opacity: 1;
+   }
+ }
++
++
++/* AI 진행 상태 패널 */
++.chat-layout {
++  flex: 1 1 auto;
++  min-height: 0;
++  display: flex;
++  overflow: hidden;
++}
++
++.chat-layout .chat {
++  flex: 1 1 auto;
++  min-width: 0;
++}
++
++.signal-panel {
++  width: 320px;
++  flex: 0 0 320px;
++  border-left: 1px solid #e5e7eb;
++  background: #ffffff;
++  padding: 18px 16px;
++  overflow-y: auto;
++}
++
++.signal-panel__header {
++  display: flex;
++  justify-content: space-between;
++  gap: 12px;
++  align-items: flex-start;
++  margin-bottom: 16px;
++}
++
++.signal-panel__header strong {
++  display: block;
++  font-size: 16px;
++  color: #111827;
++}
++
++.signal-panel__header p {
++  margin: 4px 0 0;
++  font-size: 12px;
++  color: #6b7280;
++}
++
++.signal-panel__badge {
++  flex: 0 0 auto;
++  padding: 4px 8px;
++  border-radius: 999px;
++  background: #f3f4f6;
++  color: #374151;
++  font-size: 12px;
++  font-weight: 700;
++}
++
++.signal-panel__badge.is-running {
++  background: #dcfce7;
++  color: #166534;
++}
++
++.signal-panel__badge.is-error {
++  background: #fee2e2;
++  color: #991b1b;
++}
++
++.signal-panel__current {
++  padding: 12px;
++  border-radius: 12px;
++  background: #f9fafb;
++  color: #111827;
++  font-size: 14px;
++  line-height: 1.5;
++  margin-bottom: 16px;
++  border: 1px solid #e5e7eb;
++}
++
++.signal-panel__steps {
++  display: flex;
++  flex-direction: column;
++  gap: 10px;
++}
++
++.signal-step {
++  display: flex;
++  gap: 10px;
++  align-items: flex-start;
++  color: #9ca3af;
++  font-size: 13px;
++  line-height: 1.45;
++}
++
++.signal-step__dot {
++  width: 18px;
++  height: 18px;
++  margin-top: 1px;
++  border-radius: 50%;
++  border: 2px solid #d1d5db;
++  flex: 0 0 18px;
++  display: grid;
++  place-items: center;
++  font-size: 10px;
++  background: #fff;
++}
++
++.signal-step.is-done {
++  color: #111827;
++}
++
++.signal-step.is-done .signal-step__dot {
++  border-color: #22c55e;
++  background: #22c55e;
++  color: white;
++}
++
++.signal-step.is-current {
++  color: #111827;
++  font-weight: 700;
++}
++
++.signal-step.is-current .signal-step__dot {
++  border-color: #22c55e;
++  border-top-color: transparent;
++  animation: signalSpin 0.8s linear infinite;
++}
++
++.signal-step__code {
++  display: block;
++  font-size: 11px;
++  color: #6b7280;
++  margin-bottom: 2px;
++}
++
++@keyframes signalSpin {
++  to {
++    transform: rotate(360deg);
++  }
++}
++
++@media (max-width: 1000px) {
++  .signal-panel {
++    display: none;
++  }
++}
+diff --git a/frontend/js/chat.js b/frontend/js/chat.js
+index 26d9b2f..cbe49f2 100644
+--- a/frontend/js/chat.js
++++ b/frontend/js/chat.js
+@@ -16,6 +16,10 @@ document.addEventListener("DOMContentLoaded", () => {
+     dragOverlay: $("dragOverlay"),
+     aiStatus: $("aiStatus"),
+     aiStatusText: $("aiStatusText"),
++    signalPanel: $("signalPanel"),
++    signalBadge: $("signalBadge"),
++    signalCurrent: $("signalCurrent"),
++    signalSteps: $("signalSteps"),
+   };
+ 
+   const params = new URLSearchParams(window.location.search);
+@@ -129,6 +133,95 @@ document.addEventListener("DOMContentLoaded", () => {
+       .replaceAll("'", "&#039;");
+   }
+ 
++  const SIGNAL_ORDER = [
++    "10000", "10001", "10002", "10003",
++    "20000", "20001",
++    "30000", "30001", "30002", "30003",
++    "40000", "40001",
++    "50000", "50001",
++  ];
++
++  const DEFAULT_SIGNAL_MESSAGES = {
++    "10000": "PDF 텍스트/섹션 추출 시작",
++    "10001": "PDF 텍스트/섹션 추출 완료",
++    "10002": "도면 캡션(LLaVA) 시작",
++    "10003": "도면 캡션(LLaVA) 완료",
++    "20000": "사용자 입력 → JSON 변환 시작",
++    "20001": "사용자 입력 → JSON 변환 완료",
++    "30000": "유사 특허 탐색 시작",
++    "30001": "유사 특허 top-5 검색 완료",
++    "30002": "문서별 재구조화 시작",
++    "30003": "문서별 재구조화 완료",
++    "40000": "독립 청구항 5회 생성 시작",
++    "40001": "독립 청구항 생성+클러스터링 완료",
++    "50000": "GPT 최종 답변 생성 시작",
++    "50001": "GPT 최종 답변 생성 완료",
++  };
++
++  function renderSignalPanel(status) {
++    if (!el.signalBadge || !el.signalCurrent || !el.signalSteps) return;
++
++    const code = String(status?.code || "IDLE");
++    const message = status?.message || "아직 진행 중인 작업이 없습니다.";
++    const running = !!status?.running;
++    const steps = status?.steps || DEFAULT_SIGNAL_MESSAGES;
++    const history = Array.isArray(status?.history) ? status.history : [];
++    const doneCodes = new Set(history.map((item) => String(item.code)));
++
++    el.signalBadge.classList.remove("is-running", "is-error");
++
++    if (code === "ERROR") {
++      el.signalBadge.textContent = "오류";
++      el.signalBadge.classList.add("is-error");
++    } else if (running) {
++      el.signalBadge.textContent = "진행 중";
++      el.signalBadge.classList.add("is-running");
++    } else if (code === "DONE") {
++      el.signalBadge.textContent = "완료";
++    } else {
++      el.signalBadge.textContent = "대기";
++    }
++
++    el.signalCurrent.textContent = message;
++
++    el.signalSteps.innerHTML = SIGNAL_ORDER.map((stepCode) => {
++      const stepMessage = steps[stepCode] || DEFAULT_SIGNAL_MESSAGES[stepCode] || "AI 작업 처리";
++      const isDone = doneCodes.has(stepCode);
++      const isCurrent = running && code === stepCode;
++
++      let className = "signal-step";
++      if (isDone) className += " is-done";
++      if (isCurrent) className += " is-current";
++
++      return `
++        <div class="${className}">
++          <span class="signal-step__dot">${isDone && !isCurrent ? "✓" : ""}</span>
++          <div>
++            <span class="signal-step__code">${stepCode}</span>
++            <span>${escapeHtml(stepMessage)}</span>
++          </div>
++        </div>
++      `;
++    }).join("");
++  }
++
++  function resetSignalPanel() {
++    if (!el.signalBadge || !el.signalCurrent || !el.signalSteps) return;
++
++    el.signalBadge.classList.remove("is-running", "is-error");
++    el.signalBadge.textContent = "대기";
++    el.signalCurrent.textContent = "아직 진행 중인 작업이 없습니다.";
++    el.signalSteps.innerHTML = SIGNAL_ORDER.map((code) => `
++      <div class="signal-step">
++        <span class="signal-step__dot"></span>
++        <div>
++          <span class="signal-step__code">${code}</span>
++          <span>${escapeHtml(DEFAULT_SIGNAL_MESSAGES[code])}</span>
++        </div>
++      </div>
++    `).join("");
++  }
++
+   function formatPatentAnswer(rawText) {
+     let text = String(rawText ?? "").trim();
+     if (!text) return "";
+@@ -492,6 +585,7 @@ document.addEventListener("DOMContentLoaded", () => {
+ 
+     try {
+       const status = await api.status();
++      renderSignalPanel(status);
+ 
+       if (status.running) {
+         showAiStatus(status.message);
+@@ -687,6 +781,7 @@ document.addEventListener("DOMContentLoaded", () => {
+ 
+   async function init() {
+     renderAuthButton();
++    resetSignalPanel();
+     updateSendState();
+     bindEvents();
+     await loadRecentChats();
+diff --git a/frontend/pages/chat.html b/frontend/pages/chat.html
+index 9028ee1..7275f95 100644
+--- a/frontend/pages/chat.html
++++ b/frontend/pages/chat.html
+@@ -93,12 +93,30 @@
+         </header>
+ 
+         <!-- Chat content -->
+-        <section class="chat">
+-          <div class="chat-wrap" id="chatWrap"></div>
+-          <div class="ai-status" id="aiStatus" hidden>
+-            <span class="ai-status__spinner"></span>
+-            <span class="ai-status__text" id="aiStatusText">AI가 답변을 생성 중입니다.</span>
+-          </div>
++        <section class="chat-layout">
++          <section class="chat">
++            <div class="chat-wrap" id="chatWrap"></div>
++            <div class="ai-status" id="aiStatus" hidden>
++              <span class="ai-status__spinner"></span>
++              <span class="ai-status__text" id="aiStatusText">AI가 답변을 생성 중입니다.</span>
++            </div>
++          </section>
++
++          <aside class="signal-panel" id="signalPanel" aria-label="AI 진행 상태">
++            <div class="signal-panel__header">
++              <div>
++                <strong>AI 진행 상태</strong>
++                <p>시그널 처리 로그</p>
++              </div>
++              <span class="signal-panel__badge" id="signalBadge">대기</span>
++            </div>
++
++            <div class="signal-panel__current" id="signalCurrent">
++              아직 진행 중인 작업이 없습니다.
++            </div>
++
++            <div class="signal-panel__steps" id="signalSteps"></div>
++          </aside>
+         </section>
+ 
+         <!-- Bottom input -->
