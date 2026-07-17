@@ -1527,7 +1527,7 @@ description clean: 본 발명은, 일 실시예에 따르면, 예를 들어, 예
             print(f"[Phase0] 도메인: {domain}  이유: {sectioned.get('type_reason','')}")
 
 
-            domain = _verify_domain(raw_input, domain)  # ← 추가: 교차 검증
+            domain = verify_domain(raw_input, domain)  # ← 추가: 교차 검증
             print(f"[Phase0] 최종 도메인: {domain}")
             user_claim_items = split_claims_into_items(sectioned["claims"]["raw"])
             print(f"[Phase0] 사용자 청구항 {len(user_claim_items)}개 항으로 분리됨")
