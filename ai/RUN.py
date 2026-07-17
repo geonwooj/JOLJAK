@@ -1376,7 +1376,7 @@ class ThreePhaseClaimPipeline:
     def phase0_normalize_input(self, raw_input: str, few_shots: list) -> dict:
         """
 
-domain = _verify_domain(raw_input, domain)  # ← 추가: 교차 검증
+domain = verify_domain(raw_input, domain)  # ← 추가: 교차 검증
 print(f"[Phase0] 최종 도메인: {domain}")
         사용자 자유 형식 입력을 KorPatBERT 형식(섹션화 JSON)으로 정규화.
         이 단계는 단순 전처리가 아니라, 사용자 입력을 KorPatBERT가 학습한
