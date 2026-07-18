@@ -190,16 +190,35 @@ def verify_domain(raw_input: str, classified_domain: str) -> str:
 # 한글 폰트 자동 감지
 # ════════════════════════════════════════════════════════════════
 def setup_korean_font() -> bool:
-    candidates = ["Malgun Gothic", "AppleGothic", "NanumGothic",
-                 "NanumBarunGothic", "Noto Sans CJK KR"]
-    available = {f.name for f in fm.fontManager.ttflist}
-    for name in candidates:
-        if name in available:
-            plt.rcParams["font.family"] = name
-            plt.rcParams["axes.unicode_minus"] = False
-            print(f"[Chart] 한글 폰트 적용: {name}")
-            return True
-    print("[Chart] ⚠️  한글 폰트를 찾지 못함 → 영문 라벨로 대체")
+    """
+    한글 폰트 탐지. 정확히 일치하는 이름만 찾으면 리눅스 배포판에서
+    'Noto Sans CJK KR Regular'처럼 등록 이름이 조금 다른 경우 다 놓친다
+    (실행 환경이 바뀔 때 폰트가 깨지는 문제의 주 원인이었음).
+    그래서 후보 키워드가 폰트 이름에 '포함'되는지로 넓게 검사한다.
+    """
+    candidates = ["malgun gothic", "applegothic", "nanumgothic", "nanumbarungothic",
+                  "nanum gothic", "nanum barun gothic", "noto sans cjk kr",
+                  "noto sans kr", "source han sans", "batang", "gulim", "dotum",
+                  "d2coding", "unfonts", "un dotum", "un gothic", "pretendard"]
+
+    installed = list(fm.fontManager.ttflist)
+    for f in installed:
+        name_lower = f.name.lower()
+        for cand in candidates:
+            if cand in name_lower:
+                plt.rcParams["font.family"] = f.name
+                plt.rcParams["axes.unicode_minus"] = False
+                print(f"[Chart] 한글 폰트 적용: {f.name}")
+                return True
+
+    print("[Chart] ⚠️  한글 폰트를 찾지 못함 → 영문 라벨로 대체됩니다.")
+    print("[Chart]     (주의: LLM이 생성한 한글 텍스트 자체는 영문으로 안 바뀌므로,")
+    print("[Chart]      문서 요약 등 실제 내용은 여전히 깨져 보일 수 있습니다.)")
+    print("[Chart]     한글 폰트 설치 후 다시 실행하세요:")
+    print("[Chart]       Windows : 보통 기본 설치돼 있음(맑은 고딕) — 안 뜨면 폰트 캐시 재생성 필요")
+    print("[Chart]       Ubuntu/Debian : sudo apt-get install -y fonts-nanum && fc-cache -fv")
+    print("[Chart]       macOS   : 기본 AppleGothic 있음 — 안 뜨면 'brew install --cask font-nanum-gothic'")
+    print("[Chart]       Docker/서버 : fonts-nanum 패키지를 이미지에 포함시켜야 함")
     return False
 
 
@@ -224,6 +243,36 @@ def send_signal(code: int, description: str = ""):
             print(f"[Signal] {code} 전송 완료" + (f" — {description}" if description else ""))
         except Exception as e:
             print(f"[Signal] {code} 전송 실패 (무시): {e}")
+
+    threading.Thread(target=_send, daemon=True).start()
+
+
+def send_image(code: int, description: str, image_path: Path, run_id: str = ""):
+    """
+    생성된 이미지(예: Phase1 유사도 대시보드 PNG)를 백엔드로 전송한다.
+    send_signal()과 동일하게 실패/지연이 파이프라인에 영향 주지 않도록
+    백그라운드 스레드에서 fire-and-forget으로 전송한다.
+
+    백엔드(Spring)는 이 요청을 받아서 프론트에 실시간으로 밀어줘야 한다
+    (WebSocket/SSE 등 — send_signal()의 진행 코드를 프론트로 넘기는 것과
+    동일한 채널을 쓰면 된다). 전송 계약(POST /api/signal/image,
+    multipart/form-data: code, description, runId, file)은 백엔드 담당자와
+    맞춰야 한다.
+    """
+    def _send():
+        try:
+            image_path_ = Path(image_path)
+            if not image_path_.exists():
+                print(f"[Signal] 이미지 전송 건너뜀 — 파일 없음: {image_path_}")
+                return
+            with open(image_path_, "rb") as f:
+                files = {"file": (image_path_.name, f, "image/png")}
+                data  = {"code": str(code), "description": description, "runId": run_id}
+                requests.post(f"{WEB_LINK}image", files=files, data=data, timeout=10)
+            print(f"[Signal] 이미지 전송 완료: {image_path_.name}"
+                  + (f" — {description}" if description else ""))
+        except Exception as e:
+            print(f"[Signal] 이미지 전송 실패 (무시): {e}")
 
     threading.Thread(target=_send, daemon=True).start()
         
@@ -995,6 +1044,11 @@ class IntermediateDocumentRestructurer:
         """
         doc_claim_items = doc.get("claim_items", [])
         if not user_claim_items or not doc_claim_items:
+            reason = ("사용자 청구항 파싱 실패(Phase0)" if not user_claim_items
+                      else "문서 청구항 파싱 실패(claim_items 비어있음)")
+            print(f"  [진단] {doc.get('doc_id','?')}: claim-level 유사도 계산 불가 — "
+                  f"user_claim_items={len(user_claim_items)}개  "
+                  f"doc_claim_items={len(doc_claim_items)}개  ({reason})")
             return {"top5": [], "all_pairs": []}
 
         seen_pairs = set()
@@ -1112,7 +1166,7 @@ class Phase1Visualizer:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-    def _extract_doc_brief(self, doc: dict, max_len: int = 50) -> str:
+    def _extract_doc_brief(self, doc: dict, max_len: int = 45) -> str:
         """
         restructured_text에서 "문서 요약:" 다음 내용을 뽑아 초간단 요약 생성.
         실패 시 title을 사용.
@@ -1123,6 +1177,10 @@ class Phase1Visualizer:
                       text, re.S)
         if m:
             summary = m.group(1).strip()
+            # LLM이 프롬프트의 형식 안내문("(3문장 이내)" 등)을 답변 앞부분에
+            # 그대로 따라 쓰는 경우가 있어, 맨 앞 괄호 문구는 안내문 echo로
+            # 보고 제거한다.
+            summary = re.sub(r"^\([^)]{0,20}\)\s*", "", summary)
             summary = re.sub(r"\s+", " ", summary)
             # 첫 문장만 사용 (마침표 기준)
             first_sentence = re.split(r"(?<=[.다])\s+", summary)[0]
@@ -1140,14 +1198,24 @@ class Phase1Visualizer:
         return brief
 
     def save_dashboard(self, restructured_docs: list, domain: str,
-                       save_path: Optional[Path] = None) -> Path:
-        if not restructured_docs:
-            print("[Phase1Visualizer] 시각화할 문서 결과가 없습니다.")
-            return None
-
+                       save_path: Optional[Path] = None,
+                       reason: str = "") -> Path:
         save_path = Path(save_path) if save_path else \
             (self.output_dir / "phase1_similarity_dashboard.png")
         save_path.parent.mkdir(parents=True, exist_ok=True)
+        gen_time = _time.strftime("%Y-%m-%d %H:%M:%S")
+
+        if not restructured_docs:
+            # 파일 경로가 고정이라(=프론트가 항상 이 경로를 보여줌), 여기서
+            # 조용히 리턴만 하면 예전에 성공했던 이미지가 그대로 남아서
+            # 이번 실행도 성공한 것처럼 보인다. 그러니 실패했다는 사실 자체를
+            # 같은 경로에 이미지로 남겨서, 프론트에서 봐도 바로 실패라는 걸
+            # 알 수 있게 한다.
+            msg = (f"[Phase1Visualizer] 시각화할 문서 결과가 없습니다"
+                   f"{f' ({reason})' if reason else ''}.")
+            print(msg)
+            self._save_error_placeholder(save_path, domain, gen_time, reason)
+            return None
 
         baseline = DOMAIN_BASELINES.get(domain, {})
 
@@ -1166,15 +1234,27 @@ class Phase1Visualizer:
               f"Phase 1: Claim Search Similarity — Domain: {domain}"),
             fontsize=15, fontweight="bold", y=0.96
         )
+        # 생성 시각 워터마크 — 파일 경로가 고정이라 파일명만으로는 언제
+        # 만들어진 이미지인지 알 수 없다. 화면에서 바로 신선도를 확인할 수
+        # 있도록 우측 상단에 작게 남긴다.
+        fig.text(0.97, 0.965, L(f"생성 시각: {gen_time}", f"Generated: {gen_time}"),
+                 fontsize=8, color="#888888", ha="right", va="top")
 
         self._plot_doc_level_bar(ax_a, restructured_docs, baseline, doc_labels)
         self._plot_user_claim_doc_heatmap(ax_c, restructured_docs, doc_labels)
 
         # ── 그래프 하단에 문서 매핑 범례 텍스트 출력 ────────────────
-        legend_lines = [
-            L(f"{i+1}번 문서: {brief}", f"Doc {i+1}: {brief}")
-            for i, brief in enumerate(doc_briefs)
-        ]
+        import textwrap
+        wrap_width = 70  # 한 줄에 들어갈 대략적인 글자 수 (한글 기준)
+        legend_lines = []
+        for i, brief in enumerate(doc_briefs):
+            prefix = L(f"{i+1}번 문서: ", f"Doc {i+1}: ")
+            wrapped = textwrap.wrap(
+                brief, width=wrap_width,
+                initial_indent=prefix,
+                subsequent_indent=" " * len(prefix),
+            )
+            legend_lines.append("\n".join(wrapped) if wrapped else prefix.rstrip())
         legend_text = "\n".join(legend_lines)
 
         fig.text(
@@ -1188,8 +1268,34 @@ class Phase1Visualizer:
 
         plt.savefig(save_path, dpi=150, bbox_inches="tight")
         plt.close(fig)
-        print(f"[Phase1Visualizer] 대시보드 저장 완료: {save_path}")
+        print(f"[Phase1Visualizer] 대시보드 저장 완료: {save_path}  (생성 시각: {gen_time})")
         return save_path
+
+    def _save_error_placeholder(self, save_path: Path, domain: str,
+                                gen_time: str, reason: str):
+        """
+        restructured_docs가 비어 대시보드를 그릴 수 없을 때, 같은 고정
+        경로에 '실패했다'는 사실과 원인을 담은 이미지를 대신 저장한다.
+        프론트는 경로만 보고 그대로 띄우므로, 옛날 성공 이미지가 남아있는
+        것보다 실패 사실이 바로 보이는 게 훨씬 낫다.
+        """
+        fig = plt.figure(figsize=(15, 6))
+        fig.text(0.5, 0.62,
+                 L("⚠ Phase 1 대시보드 생성 실패", "⚠ Phase 1 dashboard generation failed"),
+                 ha="center", va="center", fontsize=20, fontweight="bold", color="#C0392B")
+        detail = L(
+            f"도메인: {domain}\n생성 시도 시각: {gen_time}\n"
+            f"원인: {reason or '검색된 문서가 0건이거나 재구조화 결과가 비어있음'}\n"
+            f"(백엔드 콘솔의 [Phase1] ⚠️ 로그를 확인하세요)",
+            f"Domain: {domain}\nAttempted at: {gen_time}\n"
+            f"Reason: {reason or 'No documents found or restructuring produced no results'}\n"
+            f"(check backend console [Phase1] warning logs)"
+        )
+        fig.text(0.5, 0.40, detail, ha="center", va="center", fontsize=12,
+                 family=plt.rcParams["font.family"])
+        plt.savefig(save_path, dpi=150, bbox_inches="tight")
+        plt.close(fig)
+        print(f"[Phase1Visualizer] 실패 안내 이미지로 대체 저장: {save_path}")
 
     # ── [A] 문서 단위 유사도 막대그래프 ─────────────────────────
     def _plot_doc_level_bar(self, ax, restructured_docs: list, baseline: dict,
@@ -1248,8 +1354,17 @@ class Phase1Visualizer:
                   f"페어수={len(pairs)}  문서청구항수={doc_claim_count}")
         # ────────────────────────────────────────────────────────────
         if not user_claim_nos:
-            ax.text(0.5, 0.5, L("데이터 없음", "No data"),
-                   ha="center", va="center", transform=ax.transAxes)
+            msg = L(
+                "데이터 없음\n(모든 문서에서 사용자 청구항 ↔ 문서 청구항 매칭 실패)\n"
+                "→ 콘솔의 [진단] 로그에서 원인(사용자/문서 청구항 파싱 실패 여부) 확인",
+                "No data\n(claim-level matching failed for all documents)\n"
+                "→ check console [진단] logs for the cause"
+            )
+            ax.text(0.5, 0.5, msg, ha="center", va="center",
+                   transform=ax.transAxes, fontsize=10)
+            ax.set_title(L("[B] 사용자 청구항 × 문서 최고유사도 히트맵",
+                          "[B] User Claim x Document Heatmap"),
+                        fontsize=12, fontweight="bold")
             return
 
         matrix = np.full((len(user_claim_nos), len(restructured_docs)), np.nan)
@@ -1677,10 +1792,10 @@ class ThreePhaseClaimPipeline:
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
         self.restructurer = IntermediateDocumentRestructurer(claims_searcher, llm_client)
-        self.ensemble      = AgentEnsembleGenerator(embedder, llm_client, output_dir)
+        self.ensemble      = AgentEnsembleGenerator(embedder, llm_client, self.output_dir)
         self.area_chair    = AreaChairSynthesizer(llm_client)
-        self.visualizer     = Phase1Visualizer(output_dir)   
-        self.timer          = StageTimer()                
+        self.visualizer     = Phase1Visualizer(self.output_dir)
+        self.timer          = StageTimer()
 
     # ── Phase 0 ──────────────────────────────────────────────
     def phase0_normalize_input(self, raw_input: str, few_shots: list) -> dict:
@@ -1859,6 +1974,13 @@ description clean: 본 발명은, 일 실시예에 따르면, 예를 들어, 예
             for d in top5_docs:
                 print(f"  {d.get('doc_rank','-')} {d['doc_id']}  "
                       f"{d['score']:.4f}  {d['label']}")
+            dashboard_fail_reason = ""
+            if not top5_docs:
+                dashboard_fail_reason = f"도메인 '{domain}' 검색 결과 0건"
+                print(f"[Phase1] ⚠️⚠️⚠️ 경고: 도메인 '{domain}'에서 검색 결과가 0건입니다. "
+                      f"이후 Phase 1/2/3이 전부 빈 데이터로 진행됩니다. "
+                      f"NPZ_PATH의 selected_centered_sections/{domain}__claims__...npz가 "
+                      f"실제로 존재하는지, domain 이름이 DB 폴더명과 정확히 일치하는지 확인하세요.")
 
             send_signal(30001, "유사 특허 top-5 검색 완료")
             send_signal(30002, "문서별 재구조화 시작")
@@ -1879,7 +2001,16 @@ description clean: 본 발명은, 일 실시예에 따르면, 예를 들어, 예
 
         # ── Phase 1 시각화 ───────────────────────────────────
         with timer.stage("Phase 1 시각화"):
-            chart_path = self.visualizer.save_dashboard(restructured_docs, domain)
+            chart_path = self.visualizer.save_dashboard(
+                restructured_docs, domain, reason=dashboard_fail_reason
+            )
+            if chart_path:
+                # 전체 파이프라인이 끝나길 기다리지 않고, 대시보드가 만들어지는
+                # 즉시 프론트로 전송한다 (send_signal과 같은 fire-and-forget 방식).
+                send_image(30004, "Phase1 유사도 대시보드 생성 완료",
+                          chart_path, run_id=self.output_dir.name)
+            else:
+                print("[Phase1] ⚠️ 대시보드가 생성되지 않아 프론트로 전송할 이미지가 없습니다.")
 
         # ── Phase 2 ──────────────────────────────────────────
         send_signal(40000, "독립 청구항 5회 생성 시작")
