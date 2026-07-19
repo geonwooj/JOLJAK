@@ -96,6 +96,36 @@ CLAIMS_STOPWORDS_STRONG = [
     "제 3 항에 있어서", "제3항에 있어서",
     "삭제", "단계", "수단", "모듈", "복수의",
 ]
+
+# npz_rebuild.py의 SECTION_STOPWORDS["abstract"/"description"]와 반드시 동일한
+# 값이어야 한다 — DB 구축 시 쓴 전처리와 쿼리 시점 전처리가 어긋나면
+# Full Pipeline 검색이 실제 DB 좌표계와 안 맞게 된다.
+ABSTRACT_STOPWORDS_CONSERVATIVE = [
+    "본 발명은", "본 발명의 실시예에 따르면", "본 발명의 일 실시예에 따르면",
+    "일 실시예에 따르면", "일 실시예에서", "본 실시예에 따르면",
+    "에 관한 것이다", "를 제공한다", "를 포함한다", "를 포함하는",
+    "의 효과가 있다", "할 수 있는 효과가 있다",
+]
+ABSTRACT_STOPWORDS_STRONG = [
+    "적어도 하나 이상의", "하나 이상의", "기 설정된", "미리 설정된",
+    "사용자 단말", "복수의", "상기", "및",
+]
+DESCRIPTION_STOPWORDS_CONSERVATIVE = [
+    "본 발명은", "본 발명의 실시예에 따르면", "본 발명의 일 실시예에 따르면",
+    "일 실시예에 따르면", "일 실시예에서", "본 실시예에 따르면",
+    "예를 들어", "예컨대", "이하", "상기", "에 관한 것이다",
+]
+DESCRIPTION_STOPWORDS_STRONG = [
+    "도 1은", "도 2는", "도 3은", "도 4는", "도 5는", "도 6는", "도 7은", "도 8은",
+    "도 9은", "도 10은", "도 11은", "도 12은", "도 13은", "도 14은", "도 15은",
+    "도 16은", "도 17은", "도면의 간단한 설명", "발명을 실시하기 위한 구체적인 내용",
+    "기술분야", "배경기술", "선행기술문헌", "발명의 효과", "발명의 내용",
+    "해결하려는 과제", "과제의 해결 수단", "복수의", "하나 이상의",
+]
+
+# npz_rebuild.py의 SECTION_ORDER와 동일한 3섹션 (순서는 합산에 영향 없음)
+FULL_PIPELINE_SECTIONS = ["abstract", "claims", "description"]
+
 DOMAIN_KEYWORDS = {
     "Ai":            ["인공지능", "딥러닝", "머신러닝", "신경망", "학습모델",
                       "강화학습", "자연어처리", "이미지인식"],
@@ -189,36 +219,96 @@ def verify_domain(raw_input: str, classified_domain: str) -> str:
 # ════════════════════════════════════════════════════════════════
 # 한글 폰트 자동 감지
 # ════════════════════════════════════════════════════════════════
+FONT_DIR = Path(__file__).resolve().parent / "fonts"
+BUNDLED_KOREAN_FONT = FONT_DIR / "Pretendard-Regular.otf"
+
+
+def _font_actually_renders_hangul(font_family_or_path: str, is_path: bool = False) -> bool:
+    """
+    폰트 '이름'만 보고 고르면 'HCR Batang Ext'처럼 이름에 Batang이 들어가도
+    실제로는 한글 글리프가 거의 없는 폰트를 잘못 선택할 수 있다(실제로
+    이 문제로 로그에 수백 줄의 'Glyph ... missing' 경고가 났었음).
+    후보를 확정하기 전에 실제로 한글을 그려봐서 누락 경고가 뜨는지 검사한다.
+    """
+    import warnings as _warnings
+    try:
+        fp = (fm.FontProperties(fname=font_family_or_path) if is_path
+              else fm.FontProperties(family=font_family_or_path))
+        fig = plt.figure()
+        with _warnings.catch_warnings(record=True) as caught:
+            _warnings.simplefilter("always")
+            fig.text(0, 0, "한글 청구항 발명", fontproperties=fp)
+            fig.canvas.draw()
+        plt.close(fig)
+        missing = [w for w in caught if "missing from font" in str(w.message)]
+        return len(missing) == 0
+    except Exception:
+        return False
+
+
 def setup_korean_font() -> bool:
     """
-    한글 폰트 탐지. 정확히 일치하는 이름만 찾으면 리눅스 배포판에서
-    'Noto Sans CJK KR Regular'처럼 등록 이름이 조금 다른 경우 다 놓친다
-    (실행 환경이 바뀔 때 폰트가 깨지는 문제의 주 원인이었음).
-    그래서 후보 키워드가 폰트 이름에 '포함'되는지로 넓게 검사한다.
+    한글 폰트 탐지.
+
+    1순위: 프로젝트에 동봉된 폰트 파일(fonts/Pretendard-Regular.otf)을
+    matplotlib에 직접 등록해서 쓴다. 시스템에 한글 폰트가 설치돼 있는지와
+    무관하게 항상 동작한다 — 이게 "다른 실행 환경으로 옮기면 한글이
+    깨진다"는 문제의 근본 해결책이다(시스템 폰트 설치 여부에 의존하지 않음).
+
+    2순위(동봉 파일이 없거나 검증 실패 시): 시스템에 설치된 폰트 중
+    한글 폰트로 '보이는' 것을 이름 부분일치로 찾되, 이름만 믿지 않고
+    실제로 한글을 렌더링해서 글리프 누락 경고가 없는지 검증한 후보만
+    최종 채택한다 (이름에 'Batang'이 들어가도 실제 한글 지원이 부실한
+    폰트가 있어서, 이름 매칭만으로는 신뢰할 수 없다).
     """
+    if BUNDLED_KOREAN_FONT.exists():
+        try:
+            fm.fontManager.addfont(str(BUNDLED_KOREAN_FONT))
+            font_name = fm.FontProperties(fname=str(BUNDLED_KOREAN_FONT)).get_name()
+            if _font_actually_renders_hangul(str(BUNDLED_KOREAN_FONT), is_path=True):
+                plt.rcParams["font.family"] = font_name
+                plt.rcParams["axes.unicode_minus"] = False
+                print(f"[Chart] 한글 폰트 적용(동봉 파일, 렌더링 검증 통과): "
+                      f"{font_name}  ({BUNDLED_KOREAN_FONT})")
+                return True
+            else:
+                print(f"[Chart] ⚠️  동봉 폰트({BUNDLED_KOREAN_FONT})가 렌더링 검증에 "
+                      f"실패 → 시스템 폰트 탐색으로 폴백")
+        except Exception as e:
+            print(f"[Chart] ⚠️  동봉 폰트 로드 실패({e}) → 시스템 폰트 탐색으로 폴백")
+    else:
+        print(f"[Chart] ⚠️  동봉 폰트 파일 없음: {BUNDLED_KOREAN_FONT} "
+              f"→ 시스템 폰트 탐색으로 폴백")
+
     candidates = ["malgun gothic", "applegothic", "nanumgothic", "nanumbarungothic",
                   "nanum gothic", "nanum barun gothic", "noto sans cjk kr",
                   "noto sans kr", "source han sans", "batang", "gulim", "dotum",
                   "d2coding", "unfonts", "un dotum", "un gothic", "pretendard"]
 
     installed = list(fm.fontManager.ttflist)
+    checked_names = set()
     for f in installed:
+        if f.name in checked_names:
+            continue
         name_lower = f.name.lower()
-        for cand in candidates:
-            if cand in name_lower:
-                plt.rcParams["font.family"] = f.name
-                plt.rcParams["axes.unicode_minus"] = False
-                print(f"[Chart] 한글 폰트 적용: {f.name}")
-                return True
+        if not any(cand in name_lower for cand in candidates):
+            continue
+        checked_names.add(f.name)
+
+        if _font_actually_renders_hangul(f.name):
+            plt.rcParams["font.family"] = f.name
+            plt.rcParams["axes.unicode_minus"] = False
+            print(f"[Chart] 한글 폰트 적용(시스템, 렌더링 검증 통과): {f.name}")
+            return True
+        else:
+            print(f"[Chart]   후보 '{f.name}'은 이름은 매칭됐지만 렌더링 검증 "
+                  f"실패(한글 글리프 부실) → 건너뜀")
 
     print("[Chart] ⚠️  한글 폰트를 찾지 못함 → 영문 라벨로 대체됩니다.")
     print("[Chart]     (주의: LLM이 생성한 한글 텍스트 자체는 영문으로 안 바뀌므로,")
     print("[Chart]      문서 요약 등 실제 내용은 여전히 깨져 보일 수 있습니다.)")
-    print("[Chart]     한글 폰트 설치 후 다시 실행하세요:")
-    print("[Chart]       Windows : 보통 기본 설치돼 있음(맑은 고딕) — 안 뜨면 폰트 캐시 재생성 필요")
-    print("[Chart]       Ubuntu/Debian : sudo apt-get install -y fonts-nanum && fc-cache -fv")
-    print("[Chart]       macOS   : 기본 AppleGothic 있음 — 안 뜨면 'brew install --cask font-nanum-gothic'")
-    print("[Chart]       Docker/서버 : fonts-nanum 패키지를 이미지에 포함시켜야 함")
+    print(f"[Chart]     fonts/Pretendard-Regular.otf 파일을 "
+          f"{FONT_DIR}에 넣으면 시스템 설치 없이 바로 해결됩니다.")
     return False
 
 
@@ -549,11 +639,48 @@ def preprocess_single_claim(text: str, mode: str = "x") -> str:
     text = cleanup_artifacts(text, "claims")
     if mode == "x":
         return text
-    for phrase in CLAIMS_STOPWORDS_CONSERVATIVE:
-        text = text.replace(phrase, " ")
+    phrases = list(CLAIMS_STOPWORDS_CONSERVATIVE)
     if mode == "strong":
-        for phrase in CLAIMS_STOPWORDS_STRONG:
-            text = text.replace(phrase, " ")
+        phrases += CLAIMS_STOPWORDS_STRONG
+    text = remove_phrases(text, phrases)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+_SECTION_STOPWORDS_QUERY = {
+    "abstract":    (ABSTRACT_STOPWORDS_CONSERVATIVE, ABSTRACT_STOPWORDS_STRONG),
+    "description": (DESCRIPTION_STOPWORDS_CONSERVATIVE, DESCRIPTION_STOPWORDS_STRONG),
+}
+
+
+def preprocess_single_section(text: str, section: str, mode: str = "x") -> str:
+    """
+    preprocess_single_claim()의 abstract/description 버전.
+    claims는 그대로 preprocess_single_claim()에 위임해서 로직이 두 군데로
+    갈라지며 어긋나는 걸 막는다. description은 npz_rebuild.py/DB 구축과
+    동일하게 background를 제외한 본문(full_minus_background)만 추출한 뒤
+    전처리한다.
+
+    공통항 제거는 반드시 remove_phrases()(정규식 기반, 단어 사이 공백
+    개수 차이 허용, 대소문자 무시, 긴 구문부터 제거)를 써야 한다 — 노트북
+    원본의 실제 DB 구축 로직이 이 함수를 쓰기 때문에, 단순 문자열 치환
+    (text.replace)을 쓰면 abstract/description처럼 mode가 "x"가 아닌
+    섹션에서 쿼리 시점 전처리가 DB 구축 시점과 어긋난다.
+    """
+    if section == "claims":
+        return preprocess_single_claim(text, mode)
+
+    if section == "description":
+        text = extract_description_full_minus_background(text)
+    text = cleanup_artifacts(text, section)
+
+    if mode == "x":
+        return text
+
+    cons, strong = _SECTION_STOPWORDS_QUERY[section]
+    phrases = list(cons)
+    if mode == "strong":
+        phrases += strong
+    text = remove_phrases(text, phrases)
     return re.sub(r"\s+", " ", text).strip()
 
 
@@ -798,6 +925,11 @@ class ClaimsOnlySearcher:
         self._cache        = {}
         self._global_claims_center = None   # 도메인 전체 합산 center (lazy, 1회만 계산)
 
+        # Full Pipeline(abstract+claims+description 융합) 검색용 캐시
+        self._full_pipeline_cache   = {}   # domain -> {vectors, doc_ids, weights, best_modes}
+        self._global_section_centers = {}  # section -> center vector (lazy)
+        self._full_pipeline_all_domains_cache = None  # 전체 DB(도메인 무관) 검색용, lazy
+
     def _compute_global_claims_center(self) -> np.ndarray:
         """
         npz_rebuild.py가 실제로 DB를 만들 때 쓰는 center와 반드시 같은 값이어야
@@ -886,6 +1018,316 @@ class ClaimsOnlySearcher:
         print(f"[ClaimsSearcher] '{domain}' 로드  "
               f"mode={best_mode}  docs={len(sec_data['doc_ids'])}")
 
+    def _compute_global_section_center(self, section: str):
+        """
+        _compute_global_claims_center()의 abstract/description 버전.
+        claims는 그 함수에 위임해서 동일 로직/캐시를 그대로 재사용한다.
+        """
+        if section == "claims":
+            return self._compute_global_claims_center()
+
+        if section in self._global_section_centers:
+            return self._global_section_centers[section]
+
+        all_vecs = []
+        for domain in DOMAIN_KEYWORDS.keys():
+            bank_path = (
+                self.npz_root / "domain_section_mode_banks" /
+                f"{domain}__{section}__x__desc-full_minus_background__"
+                f"tok{CHUNK_SIZE}-{STRIDE}-{MAX_CHUNKS}__{PREPROCESS_VERSION}.npz"
+            )
+            if bank_path.exists():
+                all_vecs.append(load_npz_pack(bank_path)["vectors"])
+            else:
+                print(f"  [FullPipelineSearcher] ⚠️  bank 없음: {bank_path.name} "
+                      f"(전역 {section} center 계산에서 이 도메인 제외)")
+
+        if not all_vecs:
+            print(f"  [FullPipelineSearcher] ⚠️  {section} bank를 하나도 못 찾음 "
+                  f"→ centering 없이 진행")
+            self._global_section_centers[section] = None
+            return None
+
+        combined = np.concatenate(all_vecs, axis=0)
+        center = np.mean(combined, axis=0, keepdims=True).astype(np.float32)
+        self._global_section_centers[section] = center
+        print(f"  [FullPipelineSearcher] 전역 {section} center 계산 완료 "
+              f"(총 {len(combined):,}개 문서)")
+        return center
+
+    def _load_full_pipeline_domain(self, domain: str):
+        """
+        final_dynamic_by_domain NPZ(=DB가 실제로 검색에 쓰는 3섹션 융합
+        벡터)에서 이 도메인 몫만 잘라서 캐싱한다. meta에 npz_rebuild.py가
+        저장해 둔 도메인별 동적 가중치(weights_by_domain)와 섹션별
+        best_mode도 같이 가져온다 — 쿼리 시점에 DB 구축 때와 정확히
+        같은 가중치로 융합해야 같은 좌표계에서 비교할 수 있다.
+        """
+        if domain in self._full_pipeline_cache:
+            return
+
+        final_path = (
+            self.npz_root / "final_vectors" /
+            f"final_dynamic_by_domain__center-section__source-x__{PREPROCESS_VERSION}.npz"
+        )
+        pack = load_npz_pack(final_path)
+        meta = pack["meta"]
+
+        labels = np.asarray(pack["labels"], dtype=str)
+        idx    = np.where(labels == domain)[0]
+        if len(idx) == 0:
+            raise ValueError(f"final_dynamic_by_domain NPZ에 도메인 '{domain}' 문서가 없습니다.")
+
+        weights_by_domain = meta.get("weights_by_domain", {})
+        if domain not in weights_by_domain:
+            print(f"[FullPipelineSearcher] ⚠️  '{domain}'이 NPZ meta의 "
+                  f"weights_by_domain에 없습니다 (있는 키: "
+                  f"{list(weights_by_domain.keys())}) → 균등가중치(1/3)로 폴백합니다. "
+                  f"이러면 DB 구축 시 쓴 실제 도메인 가중치와 다른 값으로 "
+                  f"검색하게 됩니다.")
+        weights = weights_by_domain.get(
+            domain, {s: 1 / len(FULL_PIPELINE_SECTIONS) for s in FULL_PIPELINE_SECTIONS}
+        )
+        best_modes = meta.get("best_modes", {s: "x" for s in FULL_PIPELINE_SECTIONS})
+
+        self._full_pipeline_cache[domain] = {
+            "vectors":    pack["vectors"][idx].astype(np.float32),
+            "doc_ids":    np.asarray(pack["doc_ids"], dtype=str)[idx],
+            "weights":    weights,
+            "best_modes": best_modes,
+        }
+        print(f"[FullPipelineSearcher] '{domain}' 로드  docs={len(idx)}  "
+              f"weights={ {k: round(v, 4) for k, v in weights.items()} }")
+
+    def embed_query_full_pipeline(self, sectioned: dict, domain: str) -> np.ndarray:
+        """
+        Phase0에서 분리된 abstract/claims/description을 각각 그 섹션의
+        best_mode로 전처리+임베딩+centering한 뒤, npz_rebuild.py가 DB를
+        만들 때 쓴 것과 동일한 도메인별 동적 가중치로 가중합산한다.
+        (claims 하나만 보는 embed_query_claim()과 달리, 검색 자체를
+        Full Pipeline DB와 같은 벡터 공간에서 하기 위함.)
+        """
+        self._load_full_pipeline_domain(domain)
+        cached     = self._full_pipeline_cache[domain]
+        weights    = cached["weights"]
+        best_modes = cached["best_modes"]
+
+        section_vecs = []
+        for section in FULL_PIPELINE_SECTIONS:
+            sec = sectioned.get(section, {}) or {}
+            text = sec.get("clean") or sec.get("raw") or ""
+            mode = best_modes.get(section, "x")
+            processed = preprocess_single_section(text, section, mode)
+            raw_vec = self.embedder.embed_text(processed)
+
+            center = self._compute_global_section_center(section)
+            if center is not None:
+                centered = apply_centering(
+                    raw_vec.reshape(1, -1), center, alpha=1.0, renorm=True
+                ).flatten()
+            else:
+                centered = l2_normalize_rows(raw_vec.reshape(1, -1)).flatten()
+
+            w = float(weights.get(section, 0.0))
+            print(f"  [FullPipelineSearcher 진단] {section}: 원문 {len(text)}자 → "
+                  f"전처리 후 {len(processed)}자  mode={mode}  weight={w:.4f}  "
+                  f"raw_vec norm={float(np.linalg.norm(raw_vec)):.4f}")
+            if len(text.strip()) < 20:
+                print(f"    ⚠️  {section} 텍스트가 매우 짧습니다({len(text)}자) — "
+                      f"Phase0이 이 섹션을 부실하게 채웠을 수 있습니다.")
+
+            section_vecs.append(w * centered)
+
+        fused = np.sum(section_vecs, axis=0)
+        fused_norm_before_l2 = float(np.linalg.norm(fused))
+        if fused_norm_before_l2 < 1e-6:
+            print(f"  [FullPipelineSearcher 진단] ⚠️⚠️⚠️ 융합 벡터가 거의 0벡터입니다 "
+                  f"(norm={fused_norm_before_l2:.6f}) — weights 합이 0에 가깝거나 "
+                  f"각 섹션 벡터가 서로 상쇄되고 있습니다. 검색 결과가 사실상 "
+                  f"무작위(정렬 무의미)로 나올 수 있습니다.")
+        return l2_normalize_rows(fused.reshape(1, -1)).flatten()
+
+    def search_full_pipeline(self, sectioned: dict, domain: str, k: int = 10) -> list:
+        """
+        search()의 Full Pipeline 버전. claims 텍스트 하나가 아니라
+        abstract/claims/description을 전부 반영한 벡터로 문서를 검색한
+        뒤, 검색된 각 문서에 대해 (search()와 동일하게) claim_items까지
+        채워서 반환한다 — 이후 claim-level 유사도 비교/히트맵은 그대로
+        재사용 가능하다.
+        """
+        self._load_full_pipeline_domain(domain)
+        query_vec = self.embed_query_full_pipeline(sectioned, domain)
+
+        cached  = self._full_pipeline_cache[domain]
+        scores  = np.dot(cached["vectors"], query_vec)
+        top_idx = np.argsort(scores)[::-1][:k]
+
+        results = []
+        for idx in top_idx:
+            sc     = float(scores[idx])
+            doc_id = str(cached["doc_ids"][idx])
+            doc    = self._load_doc(doc_id, domain)
+            claims_full = str(_get_doc_section(doc, "claims"))
+
+            claims_structured = doc.get("claims_structured")
+            if claims_structured and isinstance(claims_structured, dict):
+                split_items = self._convert_structured_to_items(claims_structured)
+            else:
+                split_items = split_claims_into_items(claims_full)
+
+            if not split_items:
+                json_path = self.metadata_root / domain / f"{doc_id}.json"
+                if not doc:
+                    print(f"  [진단] {doc_id}: JSON 메타데이터 없음 — "
+                          f"파일 자체가 없음: {json_path}")
+                else:
+                    print(f"  [진단] {doc_id}: JSON은 로드됐지만 claim_items 0개. "
+                          f"파일={json_path}  최상위 키={list(doc.keys())}  "
+                          f"claims_full 길이={len(claims_full)}자  "
+                          f"claims_structured 존재={bool(claims_structured)}")
+
+            results.append({
+                "doc_id":            doc_id,
+                "score":             sc,
+                "label":             _score_label(sc, domain),
+                "title":             str(doc.get("title", ""))[:80],
+                "abstract":          str(_get_doc_section(doc, "abstract"))[:400],
+                "independent_claim": split_items[0]["text"] if split_items else "",
+                "claims_full":       claims_full,
+                "claim_items":       split_items,
+                "description":       str(_get_doc_section(doc, "description"))[:600],
+                "text":              doc,
+            })
+        return results
+
+    def _load_full_pipeline_all_domains(self):
+        """
+        final_dynamic_global NPZ(전체 도메인 문서 + 도메인 무관 단일 전역
+        가중치로 융합)를 로드한다.
+
+        도메인 제한 없이 전체 DB에서 검색하려면 이 NPZ를 써야 한다.
+        final_dynamic_by_domain은 도메인마다 다른 가중치로 벡터를 만들기
+        때문에, 그걸 그대로 도메인 간 비교에 쓰면 서로 다른 융합 공식으로
+        만들어진 벡터끼리 비교하는 셈이 되어 점수가 왜곡된다.
+        final_dynamic_global은 모든 도메인에 동일한 가중치를 적용해 만든
+        벡터라 전체 DB를 하나의 좌표계로 놓고 비교할 수 있다.
+        """
+        if self._full_pipeline_all_domains_cache is not None:
+            return
+
+        final_path = (
+            self.npz_root / "final_vectors" /
+            f"final_dynamic_global__center-section__source-x__{PREPROCESS_VERSION}.npz"
+        )
+        pack = load_npz_pack(final_path)
+        meta = pack["meta"]
+
+        weights = meta.get(
+            "weights", {s: 1 / len(FULL_PIPELINE_SECTIONS) for s in FULL_PIPELINE_SECTIONS}
+        )
+        best_modes = meta.get("best_modes", {s: "x" for s in FULL_PIPELINE_SECTIONS})
+
+        self._full_pipeline_all_domains_cache = {
+            "vectors":    pack["vectors"].astype(np.float32),
+            "doc_ids":    np.asarray(pack["doc_ids"], dtype=str),
+            "labels":     np.asarray(pack["labels"], dtype=str),
+            "weights":    weights,
+            "best_modes": best_modes,
+        }
+        print(f"[FullPipelineSearcher] 전체 도메인 로드  "
+              f"docs={len(pack['doc_ids']):,}  "
+              f"weights={ {k: round(v, 4) for k, v in weights.items()} }")
+
+    def embed_query_full_pipeline_global(self, sectioned: dict) -> np.ndarray:
+        """
+        embed_query_full_pipeline()의 전역(도메인 무관) 버전.
+        도메인별 가중치가 아니라 final_dynamic_global이 실제로 쓴 단일
+        전역 가중치로 abstract/claims/description을 융합한다.
+        """
+        self._load_full_pipeline_all_domains()
+        cached     = self._full_pipeline_all_domains_cache
+        weights    = cached["weights"]
+        best_modes = cached["best_modes"]
+
+        section_vecs = []
+        for section in FULL_PIPELINE_SECTIONS:
+            sec = sectioned.get(section, {}) or {}
+            text = sec.get("clean") or sec.get("raw") or ""
+            mode = best_modes.get(section, "x")
+            processed = preprocess_single_section(text, section, mode)
+            raw_vec = self.embedder.embed_text(processed)
+
+            center = self._compute_global_section_center(section)
+            if center is not None:
+                centered = apply_centering(
+                    raw_vec.reshape(1, -1), center, alpha=1.0, renorm=True
+                ).flatten()
+            else:
+                centered = l2_normalize_rows(raw_vec.reshape(1, -1)).flatten()
+
+            w = float(weights.get(section, 0.0))
+            print(f"  [FullPipelineSearcher 진단/전체DB] {section}: "
+                  f"원문 {len(text)}자  mode={mode}  weight={w:.4f}")
+            section_vecs.append(w * centered)
+
+        fused = np.sum(section_vecs, axis=0)
+        return l2_normalize_rows(fused.reshape(1, -1)).flatten()
+
+    def search_full_pipeline_all_domains(self, sectioned: dict, k: int = 10) -> list:
+        """
+        search_full_pipeline()의 전체 DB(도메인 무관) 버전. Phase0이
+        분류한 도메인 안에서만 찾지 않고, 4개 도메인 전체를 대상으로
+        검색한다. 결과의 각 문서에는 실제로 속한 도메인(result["domain"])이
+        같이 담기며, 점수 라벨(_score_label)도 그 문서 자신의 도메인
+        기준으로 매긴다 (검색을 요청한 쪽의 분류 도메인이 아니라).
+        """
+        self._load_full_pipeline_all_domains()
+        query_vec = self.embed_query_full_pipeline_global(sectioned)
+
+        cached  = self._full_pipeline_all_domains_cache
+        scores  = np.dot(cached["vectors"], query_vec)
+        top_idx = np.argsort(scores)[::-1][:k]
+
+        results = []
+        for idx in top_idx:
+            sc         = float(scores[idx])
+            doc_id     = str(cached["doc_ids"][idx])
+            doc_domain = str(cached["labels"][idx])
+            doc        = self._load_doc(doc_id, doc_domain)
+            claims_full = str(_get_doc_section(doc, "claims"))
+
+            claims_structured = doc.get("claims_structured")
+            if claims_structured and isinstance(claims_structured, dict):
+                split_items = self._convert_structured_to_items(claims_structured)
+            else:
+                split_items = split_claims_into_items(claims_full)
+
+            if not split_items:
+                json_path = self.metadata_root / doc_domain / f"{doc_id}.json"
+                if not doc:
+                    print(f"  [진단] {doc_id}: JSON 메타데이터 없음 — "
+                          f"파일 자체가 없음: {json_path}")
+                else:
+                    print(f"  [진단] {doc_id}: JSON은 로드됐지만 claim_items 0개. "
+                          f"파일={json_path}  최상위 키={list(doc.keys())}  "
+                          f"claims_full 길이={len(claims_full)}자  "
+                          f"claims_structured 존재={bool(claims_structured)}")
+
+            results.append({
+                "doc_id":            doc_id,
+                "domain":            doc_domain,
+                "score":             sc,
+                "label":             _score_label(sc, doc_domain),
+                "title":             str(doc.get("title", ""))[:80],
+                "abstract":          str(_get_doc_section(doc, "abstract"))[:400],
+                "independent_claim": split_items[0]["text"] if split_items else "",
+                "claims_full":       claims_full,
+                "claim_items":       split_items,
+                "description":       str(_get_doc_section(doc, "description"))[:600],
+                "text":              doc,
+            })
+        return results
+
     def embed_query_claim(self, claim_text: str, domain: str) -> np.ndarray:
         """단일 텍스트(전체 claims 혹은 항 1개) → centering 적용된 쿼리 벡터."""
         self._load_domain(domain)
@@ -967,13 +1409,24 @@ class ClaimsOnlySearcher:
                 split_items = split_claims_into_items(claims_full)
             # ──────────────────────────────────────────────────────────
 
+            if not split_items:
+                json_path = self.metadata_root / domain / f"{r['doc_id']}.json"
+                if not doc:
+                    print(f"  [진단] {r['doc_id']}: JSON 메타데이터 없음 — "
+                          f"파일 자체가 없음: {json_path}")
+                else:
+                    print(f"  [진단] {r['doc_id']}: JSON은 로드됐지만 claim_items 0개. "
+                          f"파일={json_path}  최상위 키={list(doc.keys())}  "
+                          f"claims_full 길이={len(claims_full)}자  "
+                          f"claims_structured 존재={bool(claims_structured)}")
+
             results.append({
                 **r,
                 "title":            str(doc.get("title", ""))[:80],
                 "abstract":         str(_get_doc_section(doc, "abstract"))[:400],
                 "independent_claim": split_items[0]["text"] if split_items else "",
                 "claims_full":      claims_full,
-                "claim_items":      split_items,
+                "claim_itefms":      split_items,
                 "description":      str(_get_doc_section(doc, "description"))[:600],
                 "text":             doc,
             })
@@ -1269,6 +1722,8 @@ class Phase1Visualizer:
         plt.savefig(save_path, dpi=150, bbox_inches="tight")
         plt.close(fig)
         print(f"[Phase1Visualizer] 대시보드 저장 완료: {save_path}  (생성 시각: {gen_time})")
+        print(f"[Phase1Visualizer]   → 절대경로: {save_path.resolve()}  "
+              f"(cwd={Path.cwd()})")
         return save_path
 
     def _save_error_placeholder(self, save_path: Path, domain: str,
@@ -1296,6 +1751,8 @@ class Phase1Visualizer:
         plt.savefig(save_path, dpi=150, bbox_inches="tight")
         plt.close(fig)
         print(f"[Phase1Visualizer] 실패 안내 이미지로 대체 저장: {save_path}")
+        print(f"[Phase1Visualizer]   → 절대경로: {save_path.resolve()}  "
+              f"(cwd={Path.cwd()})")
 
     # ── [A] 문서 단위 유사도 막대그래프 ─────────────────────────
     def _plot_doc_level_bar(self, ax, restructured_docs: list, baseline: dict,
@@ -1949,8 +2406,8 @@ description clean: 본 발명은, 일 실시예에 따르면, 예를 들어, 예
             print(f"[Phase0] 최종 도메인: {domain}  이유: {sectioned.get('type_reason','')}")
             user_claim_items = split_claims_into_items(sectioned["claims"]["raw"])
             print(f"[Phase0] 사용자 청구항 {len(user_claim_items)}개 항으로 분리됨")
-            print(f"\n[진단] Phase 0 claims.raw 원문 (앞 800자):")
-            print(sectioned["claims"]["raw"][:800])
+            print(f"\n[진단] Phase 0 원문:")
+            print(sectioned)
             print(f"\n[진단] split_claims_into_items 분리 결과:")
             for item in user_claim_items:
                 print(f"  청구항{item['claim_no']} "
@@ -1966,14 +2423,15 @@ description clean: 본 발명은, 일 실시예에 따르면, 예를 들어, 예
         with timer.stage("Phase 1 (문서검색+재구조화)"):
             print("\n" + "="*60 + "\nPhase 1: 중간 문서 재구조화\n" + "="*60)
 
-            with timer.sub("  - claims 검색", parent="Phase 1 (문서검색+재구조화)"):
-                top5_docs = self.searcher.search(
-                    sectioned["claims"]["clean"], domain, k=top_k_docs
+            with timer.sub("  - Full Pipeline 검색(전체 도메인, abstract+claims+description)",
+                          parent="Phase 1 (문서검색+재구조화)"):
+                top5_docs = self.searcher.search_full_pipeline_all_domains(
+                    sectioned, k=top_k_docs
                 )
-            print(f"[Phase1] 문서 단위 top-{top_k_docs} 검색 완료")
+            print(f"[Phase1] 문서 단위 top-{top_k_docs} 검색 완료 (전체 도메인 대상)")
             for d in top5_docs:
                 print(f"  {d.get('doc_rank','-')} {d['doc_id']}  "
-                      f"{d['score']:.4f}  {d['label']}")
+                      f"[{d.get('domain','?')}]  {d['score']:.4f}  {d['label']}")
             dashboard_fail_reason = ""
             if not top5_docs:
                 dashboard_fail_reason = f"도메인 '{domain}' 검색 결과 0건"
