@@ -20,15 +20,23 @@ body {
 }
 
 .logo {
-  width: 66px;
-  height: 66px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #a855f7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 12px;
-  color: #fff; /* SVG 색상 */
+    width:80px;
+    height:80px;
+
+    border:2px solid #626262;
+    border-radius:50%;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    margin:0 auto 24px;
+    background:white;
+}
+
+.hero-logo{
+    width: 45px;
+    height:auto;
 }
 
 .logo-svg {
@@ -47,20 +55,21 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 2px;
   text-decoration: none;
   color: inherit;
   cursor: pointer;
 }
 
 .login-header h1 {
-  margin: 8px 0;
+  margin: 0;
   font-size: 16px;
 }
 
 .login-header p {
   color: #6a7282;
   font-size: 16px;
+  margin-top: 6px;
 }
 
 .login-form > label {

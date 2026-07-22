@@ -104,6 +104,8 @@ body {
   flex: 1;
   overflow: auto;
   padding: 32px 24px 0;
+  align-items: center;
+  text-align: center;
 }
 .hero {
   max-width: 980px;
@@ -361,15 +363,18 @@ svg {
   background: #f3f3f5;
 }
 .logo {
-  width: 66px;
-  height: 66px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #a855f7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 12px;
-  color: #fff; /* SVG 색상 */
+    width:80px;
+    height:80px;
+
+    border:2px solid #626262;
+    border-radius:50%;
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    margin:0 auto 24px;
+    background:white;
 }
 
 .logo-svg {
@@ -377,6 +382,10 @@ svg {
   height: 48px;
 }
 
+.hero-logo{
+    width: 45px;
+    height:auto;
+}
 /* ===== Chat list (3-dots menu on hover) ===== */
 .chat-item {
   position: relative;
