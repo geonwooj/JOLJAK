@@ -2291,9 +2291,11 @@ class ThreePhaseClaimPipeline:
    - claims
    - description
 
-3. 각 section에 대해 raw와 clean을 모두 생성한다.
-   - raw: 특허 문서 스타일에 가까운 원문형 서술
-   - clean: 임베딩 검색을 위해 공통항과 형식적 표현을 제거한 의미 중심 서술
+3. 각 section에 대해 raw만 생성한다.
+   - raw: 특허 문서 스타일에 가까운 원문형 서술. 사용자가 입력한 내용을
+     최대한 있는 그대로, 필요한 경우 특허 문어체로 자연스럽게 다듬어
+     작성한다. (clean/공통항 제거는 이후 코드에서 DB 구축 시와 완전히
+     동일한 규칙으로 기계적으로 처리하므로, 여기서는 신경 쓰지 않는다.)
 
 4. claims.raw는 반드시 "청구항 1\\n...\\n청구항 2\\n...\\n" 형식으로,
    독립항 1개 이상과 종속항 1개 이상을 명확히 구분하여 작성한다.
@@ -2304,46 +2306,16 @@ class ThreePhaseClaimPipeline:
    "청구항 1에 있어서,"처럼 쓰지 않는다. 이는 항 분리 로직이
    "청구항 N"을 줄 시작 헤더로만 인식하기 때문이다.)
 
-5. clean 생성 시 다음 정규화 규칙과 공통항 제거 규칙을 반드시 적용한다.
-
-[정규화 규칙]
-- 불필요한 반복 공백을 하나의 공백으로 줄인다.
-- 줄바꿈이 많을 경우 의미 단위만 유지하고 과도한 줄바꿈은 제거한다.
-- 특허 번호, 등록번호, 문헌번호처럼 검색 의미와 직접 관련 없는 식별자는 제거한다.
-- "[0001]", "[0010]" 같은 문단 번호는 제거한다.
-- claims section에서는 "청구항 1", "제1항에 있어서" 같은 형식적 항 번호 표현을 제거하되,
-  핵심 구성요소, 처리 단계, 기술 효과, 데이터 흐름, 장치 구성은 삭제하지 않는다.
-- 의미가 불명확한 내용을 임의로 보충하지 않는다.
-- 사용자가 제공하지 않은 수치, 장치명, 알고리즘명, 효과를 새로 만들어내지 않는다.
-
-[description 처리 규칙]
-background를 제외한 본문 중심(구성요소/동작방식/처리흐름/시스템구조/구현방법) 으로 재구성한다.
-
-[section별 공통항 제거 규칙]
-abstract clean: 본 발명은, 일 실시예에 따르면, 에 관한 것이다, 를 제공한다,
-를 포함한다, 의 효과가 있다, 적어도 하나 이상의, 하나 이상의, 기 설정된,
-미리 설정된, 사용자 단말, 복수의, 상기, 및
-
-claims clean: 상기, 포함하는, 포함하고, 구비하는, 구비하고, 방법으로서,
-장치에 있어서, 컴퓨팅 장치에서 수행되는 방법으로서, 하나 이상의 프로세서들,
-하나 이상의 프로그램들, 메모리를 구비하고, 제 N 항에 있어서, 삭제, 단계, 수단, 모듈, 복수의
-
-description clean: 본 발명은, 일 실시예에 따르면, 예를 들어, 예컨대, 이하, 상기,
-에 관한 것이다, 도면 관련 표현, 기술분야, 배경기술, 선행기술문헌, 발명의 효과,
-발명의 내용, 해결하려는 과제, 과제의 해결 수단, 복수의, 하나 이상의
+5. 의미가 불명확한 내용을 임의로 보충하지 않는다.
+   사용자가 제공하지 않은 수치, 장치명, 알고리즘명, 효과를 새로 만들어내지 않는다.
 
 [출력 JSON schema]
 {{
   "type": "Ai | BigData | InfoComm | Semiconductor",
   "type_reason": "해당 type으로 분류한 이유",
-  "abstract": {{"raw": "...", "clean": "..."}},
-  "claims":   {{"raw": "청구항 1\\n...\\n청구항 2\\n제1항에 있어서, ...", "clean": "..."}},
-  "description": {{"raw": "...", "clean": "..."}},
-  "normalization_log": {{
-    "abstract_removed_or_weakened":    [],
-    "claims_removed_or_weakened":      [],
-    "description_removed_or_weakened": []
-  }},
+  "abstract": {{"raw": "..."}},
+  "claims":   {{"raw": "청구항 1\\n...\\n청구항 2\\n제1항에 있어서, ..."}},
+  "description": {{"raw": "..."}},
   "missing_information": []
 }}
 
@@ -2366,21 +2338,45 @@ description clean: 본 발명은, 일 실시예에 따르면, 예를 들어, 예
             for field in ["type", "abstract", "claims", "description"]:
                 if field not in parsed:
                     raise ValueError(f"필드 누락: {field}")
+            self._fill_clean_deterministically(parsed)
             return parsed
         except Exception as e:
             print(f"[Phase0] 정규화 실패: {e}")
-            return {
+            fallback = {
                 "type": "Ai", "type_reason": "기본값(파싱실패)",
-                "abstract":    {"raw": raw_input, "clean": raw_input},
-                "claims":      {"raw": raw_input, "clean": raw_input},
-                "description": {"raw": raw_input, "clean": raw_input},
-                "normalization_log": {
-                    "abstract_removed_or_weakened":    [],
-                    "claims_removed_or_weakened":      [],
-                    "description_removed_or_weakened": [],
-                },
+                "abstract":    {"raw": raw_input},
+                "claims":      {"raw": raw_input},
+                "description": {"raw": raw_input},
                 "missing_information": ["LLM 처리 실패"],
             }
+            self._fill_clean_deterministically(fallback)
+            return fallback
+
+    def _fill_clean_deterministically(self, sectioned: dict) -> None:
+        """
+        LLM이 'raw'만 생성하고, 'clean'은 여기서 DB 임베딩 시점과 완전히
+        동일한 함수(preprocess_single_section)로 기계적으로 계산해 채운다.
+
+        예전에는 LLM이 few-shot 예시의 문체를 보고 'clean'을 자유롭게
+        다시 써서 만들었는데, few-shot의 clean은 매끄럽게 재작성된 요약문
+        스타일이라 DB 문서가 실제로 거치는 기계적 전처리(원문 표현은
+        보존한 채 특정 상투구만 삭제) 결과와 스타일이 근본적으로 달랐다.
+        그러면 사용자 쿼리 임베딩과 DB 문서 임베딩이 서로 다른 종류의
+        텍스트에서 나온 벡터가 되어, 검색이 체계적으로 어긋날 수 있었다.
+        이제 clean은 항상 DB와 같은 규칙으로 결정론적으로 계산되므로
+        이 불일치가 원천적으로 사라진다.
+        """
+        try:
+            self.searcher._load_full_pipeline_all_domains()
+            best_modes = self.searcher._full_pipeline_all_domains_cache["best_modes"]
+        except Exception as e:
+            print(f"[Phase0] ⚠️  best_modes 로드 실패({e}) → 전 섹션 mode='x'로 진행")
+            best_modes = {}
+
+        for section in FULL_PIPELINE_SECTIONS:
+            raw_text = sectioned.get(section, {}).get("raw", "")
+            mode = best_modes.get(section, "x")
+            sectioned[section]["clean"] = preprocess_single_section(raw_text, section, mode)
 
     # ── 전체 파이프라인 실행 ────────────────────────────────────
     
