@@ -1,20 +1,23 @@
 package com.joljak.backend.controller;
 
-import com.joljak.backend.config.JwtUtil;
-import com.joljak.backend.domain.user.User;
-import com.joljak.backend.dto.user.ChangePasswordRequest;
-import com.joljak.backend.dto.user.UpdateProfileRequest;
-import com.joljak.backend.service.AuthService;
-import io.jsonwebtoken.JwtException;
-import jakarta.validation.Valid;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.Map;
+
+import com.joljak.backend.domain.user.User;
+import io.jsonwebtoken.JwtException;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.joljak.backend.config.JwtUtil;
+import com.joljak.backend.service.AuthService;
 
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
+
     private final AuthService authService;
     private final JwtUtil jwtUtil;
 
@@ -24,57 +27,59 @@ public class UserController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<?> getMyInfo(@RequestHeader(value = "Authorization", required = false) String header) {
+    public ResponseEntity<?> getMyInfo(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
         try {
-            User user = authService.findByEmail(extractEmail(header));
-            return ResponseEntity.ok(Map.of("name", user.getName(), "email", user.getEmail(), "createdAt", user.getCreatedAt()));
-        } catch (JwtException | IllegalArgumentException e) {
-            return ResponseEntity.status(401).body("Unauthorized");
-        }
-    }
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(401).body("Unauthorized");
+            }
 
-    @PatchMapping("/me")
-    public ResponseEntity<?> updateProfile(@RequestHeader(value = "Authorization", required = false) String header,
-                                           @Valid @RequestBody UpdateProfileRequest request) {
-        try {
-            User user = authService.updateProfile(extractEmail(header), request.getName());
-            return ResponseEntity.ok(Map.of("message", "프로필이 변경되었습니다.", "name", user.getName()));
-        } catch (JwtException | IllegalArgumentException e) {
+            String token = authHeader.substring("Bearer ".length()).trim();
+            if (token.isEmpty()) {
+                return ResponseEntity.status(401).body("Unauthorized");
+            }
+
+            String email = jwtUtil.extractEmail(token);
+            User user = authService.findByEmail(email);
+
+            return ResponseEntity.ok(
+                    Map.of(
+                            "name", user.getName(),
+                            "email", user.getEmail(),
+                            "createdAt", user.getCreatedAt()));
+        } catch (JwtException e) {
             return ResponseEntity.status(401).body("Unauthorized");
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-
-    @PatchMapping("/me/password")
-    public ResponseEntity<?> changePassword(@RequestHeader(value = "Authorization", required = false) String header,
-                                            @Valid @RequestBody ChangePasswordRequest request) {
-        try {
-            authService.changePassword(extractEmail(header), request.getCurrentPassword(), request.getNewPassword());
-            return ResponseEntity.ok("비밀번호가 변경되었습니다.");
-        } catch (JwtException | IllegalArgumentException e) {
             return ResponseEntity.status(401).body("Unauthorized");
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
     @DeleteMapping("/me")
-    public ResponseEntity<?> deleteMyAccount(@RequestHeader(value = "Authorization", required = false) String header) {
+    public ResponseEntity<?> deleteMyAccount(
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
         try {
-            authService.deleteUserByEmail(extractEmail(header));
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(401).body("Unauthorized");
+            }
+
+            String token = authHeader.substring("Bearer ".length()).trim();
+            if (token.isEmpty()) {
+                return ResponseEntity.status(401).body("Unauthorized");
+            }
+
+            String email = jwtUtil.extractEmail(token);
+            authService.deleteUserByEmail(email);
+
             return ResponseEntity.ok("계정이 삭제되었습니다.");
-        } catch (JwtException | IllegalArgumentException e) {
+        } catch (JwtException e) {
+            e.printStackTrace();
             return ResponseEntity.status(401).body("Unauthorized");
         } catch (RuntimeException e) {
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("계정 삭제 중 오류: " + e.getMessage());
         }
-    }
-
-    private String extractEmail(String header) {
-        if (header == null || !header.startsWith("Bearer ")) throw new JwtException("Unauthorized");
-        String token = header.substring(7).trim();
-        if (token.isBlank()) throw new JwtException("Unauthorized");
-        return jwtUtil.extractEmail(token);
     }
 }

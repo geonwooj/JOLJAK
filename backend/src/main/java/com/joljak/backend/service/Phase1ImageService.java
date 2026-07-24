@@ -21,30 +21,35 @@ public class Phase1ImageService {
         try {
             Path backendDir = Path.of(System.getProperty("user.dir")).toAbsolutePath();
             Path projectRoot = backendDir.getParent();
-            Path cacheDir = backendDir.resolve("generated").resolve("phase1");
-            Files.createDirectories(cacheDir);
-
-            if (chatId != null) {
-                Path cached = cacheDir.resolve("chat_" + chatId + ".png");
-                if (Files.isRegularFile(cached)) {
-                    return Optional.of(new FileSystemResource(cached));
-                }
-            }
-
             Path aiDir = projectRoot.resolve("ai");
+
             Optional<Path> latest = findLatestImage(aiDir);
             if (latest.isEmpty()) {
                 return Optional.empty();
             }
 
             Path imagePath = latest.get();
+
             if (chatId != null) {
+                Path cacheDir = backendDir.resolve("generated").resolve("phase1");
+                Files.createDirectories(cacheDir);
+
                 Path cached = cacheDir.resolve("chat_" + chatId + ".png");
+
+                /*
+                 * 기존 코드 문제:
+                 * cached 파일이 있으면 무조건 그걸 반환해서,
+                 * AI가 새 이미지를 만들어도 웹에는 예전 이미지가 계속 보였음.
+                 *
+                 * 수정:
+                 * 항상 최신 phase1 이미지를 chat별 캐시로 덮어쓴다.
+                 */
                 Files.copy(imagePath, cached, StandardCopyOption.REPLACE_EXISTING);
                 imagePath = cached;
             }
 
             return Optional.of(new FileSystemResource(imagePath));
+
         } catch (IOException e) {
             System.err.println("Phase 1 이미지 조회 실패: " + e.getMessage());
             return Optional.empty();
