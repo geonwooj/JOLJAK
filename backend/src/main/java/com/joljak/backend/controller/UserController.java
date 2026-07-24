@@ -6,6 +6,8 @@ import com.joljak.backend.domain.user.User;
 import io.jsonwebtoken.JwtException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.joljak.backend.config.JwtUtil;
 import com.joljak.backend.service.AuthService;
+import com.joljak.backend.dto.auth.PasswordChangeRequest;
 
 @RestController
 @RequestMapping("/api/users")
@@ -51,6 +54,24 @@ public class UserController {
             return ResponseEntity.status(401).body("Unauthorized");
         } catch (RuntimeException e) {
             return ResponseEntity.status(401).body("Unauthorized");
+        }
+    }
+
+    @PatchMapping("/me/password")
+    public ResponseEntity<?> changePassword(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestBody PasswordChangeRequest request) {
+        try {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                return ResponseEntity.status(401).body("Unauthorized");
+            }
+            String email = jwtUtil.extractEmail(authHeader.substring("Bearer ".length()).trim());
+            authService.changePassword(email, request.getCurrentPassword(), request.getNewPassword());
+            return ResponseEntity.ok("비밀번호가 변경되었습니다.");
+        } catch (JwtException e) {
+            return ResponseEntity.status(401).body("Unauthorized");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 

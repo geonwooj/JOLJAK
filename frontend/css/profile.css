@@ -140,3 +140,52 @@ body {
   color: #777;
   font-size: 13px;
 }
+
+.password-form {
+  display: grid;
+  gap: 14px;
+}
+
+.password-form label {
+  display: grid;
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.password-form input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #dcdfe6;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.password-help {
+  margin: 0;
+  color: #777;
+  font-size: 12px;
+}
+
+.password-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.btn-primary-small {
+  border: none;
+  border-radius: 6px;
+  padding: 7px 16px;
+  color: #fff;
+  background: #4f6ef7;
+  cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .profile-page {
+    width: auto;
+    margin: 20px 14px;
+  }
+}

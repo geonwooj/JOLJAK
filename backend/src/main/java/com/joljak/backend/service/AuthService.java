@@ -131,6 +131,64 @@ public class AuthService {
         return user;
     }
 
+
+    public void sendPasswordResetCode(String email) {
+        String normalizedEmail = email == null ? "" : email.trim();
+        if (normalizedEmail.isEmpty()) {
+            throw new RuntimeException("이메일을 입력해주세요.");
+        }
+
+        userRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new RuntimeException("가입되지 않은 이메일입니다."));
+
+        String code = String.format("%06d", random.nextInt(1_000_000));
+        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(expiryMinutes);
+        emailVerificationRepository.save(new EmailVerification(normalizedEmail, code, expiresAt));
+        mailService.sendPasswordResetCode(normalizedEmail, code);
+    }
+
+    @Transactional
+    public void resetPassword(String email, String code, String newPassword) {
+        String normalizedEmail = email == null ? "" : email.trim();
+        validateNewPassword(newPassword);
+
+        EmailVerification ev = emailVerificationRepository
+                .findTopByEmailOrderByCreatedAtDesc(normalizedEmail)
+                .orElseThrow(() -> new RuntimeException("인증코드를 먼저 요청해주세요."));
+
+        if (ev.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("인증코드가 만료되었습니다. 다시 요청해주세요.");
+        }
+        if (!ev.getCode().equals(code)) {
+            throw new RuntimeException("인증코드가 올바르지 않습니다.");
+        }
+
+        User user = userRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new RuntimeException("가입되지 않은 이메일입니다."));
+        user.changePassword(newPassword.trim());
+        ev.setVerified(true);
+    }
+
+    @Transactional
+    public void changePassword(String email, String currentPassword, String newPassword) {
+        User user = findByEmail(email);
+        if (currentPassword == null || !user.getPassword().equals(currentPassword)) {
+            throw new RuntimeException("현재 비밀번호가 올바르지 않습니다.");
+        }
+        validateNewPassword(newPassword);
+        if (currentPassword.equals(newPassword)) {
+            throw new RuntimeException("새 비밀번호는 현재 비밀번호와 다르게 입력해주세요.");
+        }
+        user.changePassword(newPassword.trim());
+    }
+
+    private void validateNewPassword(String password) {
+        String pw = password == null ? "" : password.trim();
+        if (!pw.matches(PASSWORD_POLICY_REGEX)) {
+            throw new RuntimeException("비밀번호는 8자리 이상이며 영문/숫자/특수문자를 포함해야 합니다.");
+        }
+    }
+
     public User findByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("user not found"));

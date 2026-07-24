@@ -105,9 +105,8 @@ public class SignalService {
             status = globalStatus;
         } else {
             status = statusByRoom.get(chatId);
-
-            if (status == null || status.isIdle()) {
-                status = globalStatus;
+            if (status == null) {
+                status = AiStatus.idle();
             }
         }
 
@@ -130,7 +129,7 @@ public class SignalService {
 
             AiStatus copied = status.copy();
 
-            if (copied.running || copied.isIdle() || "START".equals(copied.code)) {
+            if (copied.running || "START".equals(copied.code)) {
                 applySignal(copied, id);
             }
 
@@ -141,11 +140,35 @@ public class SignalService {
     }
 
     private void applySignal(AiStatus status, String id) {
+        if (!SIGNAL_MESSAGES.containsKey(id)) {
+            return;
+        }
+
+        int incomingIndex = signalIndex(id);
+        int currentIndex = signalIndex(status.code);
+
+        // AI 쪽에서 시그널이 늦게 도착하거나 중복 전송되어도
+        // 이미 지나간 단계로 화면이 되돌아가지 않도록 무시한다.
+        if (currentIndex >= 0 && incomingIndex < currentIndex) {
+            return;
+        }
+
         status.code = id;
         status.message = messageBySignal(id);
         status.running = true;
         status.updatedAt = LocalDateTime.now();
         status.addHistory(id, status.message);
+    }
+
+    private int signalIndex(String code) {
+        int index = 0;
+        for (String signalCode : SIGNAL_MESSAGES.keySet()) {
+            if (signalCode.equals(code)) {
+                return index;
+            }
+            index++;
+        }
+        return -1;
     }
 
     private AiStatus getMutableStatus(Long chatId) {
