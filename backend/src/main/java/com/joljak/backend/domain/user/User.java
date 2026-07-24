@@ -53,4 +53,6 @@ public class User {
     public LocalDateTime getCreatedAt() { return createdAt; }
 
     public void setEmailVerified(boolean emailVerified) { this.emailVerified = emailVerified; }
+    public void setName(String name) { this.name = name; }
+    public void setPassword(String password) { this.password = password; }
 }

@@ -28,4 +28,13 @@ public class MailService {
         );
         mailSender.send(msg);
     }
+
+    public void sendPasswordResetCode(String to, String code) {
+        SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setFrom(from);
+        msg.setTo(to);
+        msg.setSubject("[AI Patent Office] 비밀번호 재설정 인증코드");
+        msg.setText("비밀번호 재설정 인증코드입니다.\n\n인증코드: " + code + "\n\n5분 이내에 입력해주세요.");
+        mailSender.send(msg);
+    }
 }

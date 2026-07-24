@@ -79,6 +79,12 @@
 			<version>0.11.5</version>
 			<scope>runtime</scope>
 		</dependency>
+		<!-- 비밀번호 BCrypt 암호화 -->
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-crypto</artifactId>
+		</dependency>
+
 		<!-- 메일 전송 -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
