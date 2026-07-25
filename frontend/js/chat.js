@@ -211,7 +211,23 @@ document.addEventListener("DOMContentLoaded", () => {
         .filter((itemCode) => SIGNAL_ORDER.includes(itemCode))
     );
 
-    if (SIGNAL_ORDER.includes(code)) doneCodes.add(code);
+    // 현재 단계까지 진행했다면 그보다 앞의 단계들은 모두 완료된 것으로 표시한다.
+    // AI에서 일부 완료 시그널이 누락되거나 polling 사이에 빠르게 지나가도
+    // 중간 점이 비어 보이지 않도록 하기 위한 화면 표시 보정이다.
+    const reachedIndexes = [
+      ...doneCodes,
+      ...(SIGNAL_ORDER.includes(code) ? [code] : []),
+    ]
+      .map((signalCode) => SIGNAL_ORDER.indexOf(signalCode))
+      .filter((index) => index >= 0);
+
+    if (reachedIndexes.length > 0) {
+      const furthestIndex = Math.max(...reachedIndexes);
+      for (let index = 0; index <= furthestIndex; index += 1) {
+        doneCodes.add(SIGNAL_ORDER[index]);
+      }
+    }
+
     if (code === "DONE") SIGNAL_ORDER.forEach((itemCode) => doneCodes.add(itemCode));
 
     return doneCodes;
