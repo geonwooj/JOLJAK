@@ -36,19 +36,22 @@ public class AiService {
             Files.deleteIfExists(resultFile);
 
             List<String> command = new ArrayList<>();
+
             command.add(pythonExe.toString());
             command.add("RUN.py");
 
-            if (userMessage != null && !userMessage.isBlank()) {
-                command.add("--text");
-                command.add(userMessage);
-            }
-
-            if (savedFilePath != null
+            boolean hasPdf = savedFilePath != null
                     && !savedFilePath.isBlank()
-                    && savedFilePath.toLowerCase().endsWith(".pdf")) {
+                    && savedFilePath.toLowerCase().endsWith(".pdf");
+
+            if (hasPdf) {
                 command.add("--pdf");
                 command.add(savedFilePath);
+            } else if (userMessage != null && !userMessage.isBlank()) {
+                command.add("--text");
+                command.add(userMessage);
+            } else {
+                throw new IllegalArgumentException("AI에 전달할 텍스트 또는 PDF 파일이 없습니다.");
             }
 
             command.add("--output");
